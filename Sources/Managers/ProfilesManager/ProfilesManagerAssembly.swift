@@ -1,0 +1,20 @@
+//
+//  ProfilesManagerAssembly.swift
+//  
+//
+//  Created by Арман Чархчян on 22.04.2022.
+//
+
+import Foundation
+import Swinject
+import NetworkServices
+
+public final class ProfilesManagerAssembly {
+    public static func assembly(container: Container) {
+        container.register(ProfilesManagerProtocol.self) { r in
+            guard let accountID = r.resolve(AuthManagerProtocol.self)?.accountID,
+                  let profilesService = r.resolve(ProfilesServiceProtocol.self) else { fatalError(ErrorMessage.dependency.localizedDescription) }
+            return ProfilesManager(accountID: accountID, profileService: profilesService)
+        }
+    }
+}
