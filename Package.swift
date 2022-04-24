@@ -13,7 +13,7 @@ let package = Package(
             targets: ["Managers"]),
     ],
     dependencies: [
-        .package(name: "NetworkServices", path: "/Users/armancarhcan/Desktop/NetworkServices")
+        .package(url: "https://github.com/arman095095/NetworkServices.git", branch: "develop")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
