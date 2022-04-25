@@ -8,7 +8,7 @@
 import CoreData
 import UIKit
 
-protocol DatabaseServiceProtocol {
+public protocol DatabaseServiceProtocol {
     
     func create<T: NSManagedObject>(type: T.Type, completion: (T) -> Void)
     
@@ -24,7 +24,7 @@ protocol DatabaseServiceProtocol {
     func saveContext()
 }
 
-public final class CoreDataService {
+public public final class CoreDataService {
     
     private let fileName: String
     
@@ -62,7 +62,7 @@ public final class CoreDataService {
 
 extension CoreDataService: DatabaseServiceProtocol {
     
-    func create<T: NSManagedObject>(type: T.Type, completion: (T) -> Void) {
+    public func create<T: NSManagedObject>(type: T.Type, completion: (T) -> Void) {
         guard let entity = NSEntityDescription.entity(forEntityName: String(describing: type.self), in: context) else { return }
         
         let object = T(entity: entity, insertInto: context)
@@ -72,7 +72,7 @@ extension CoreDataService: DatabaseServiceProtocol {
         saveChanges()
     }
     
-    func saveChanges(completion: (Result<Void, Error>) -> () = { _ in }) {
+    public func saveChanges(completion: (Result<Void, Error>) -> () = { _ in }) {
         do {
             try context.save()
             completion(.success(()))
@@ -81,7 +81,7 @@ extension CoreDataService: DatabaseServiceProtocol {
         }
     }
     
-    func removeObjects<T: NSManagedObject>(type: T.Type) {
+    public func removeObjects<T: NSManagedObject>(type: T.Type) {
         let objects = getObjects(type: type)
         for object in objects {
             context.delete(object)
@@ -89,7 +89,7 @@ extension CoreDataService: DatabaseServiceProtocol {
         saveChanges()
     }
     
-    func getObjects<T: NSManagedObject>(type: T.Type,
+    public func getObjects<T: NSManagedObject>(type: T.Type,
                                         keySort: String? = nil,
                                         ascending: Bool? = nil) -> [T] {
         let fetchRequest = type.fetchRequest()
@@ -100,10 +100,8 @@ extension CoreDataService: DatabaseServiceProtocol {
         return (try? context.fetch(fetchRequest) as? [T]) ?? []
     }
     
-    func removeObject<T: NSManagedObject>(object: T) {
+    public func removeObject<T: NSManagedObject>(object: T) {
         context.delete(object)
         saveChanges()
     }
-    
-    
 }
