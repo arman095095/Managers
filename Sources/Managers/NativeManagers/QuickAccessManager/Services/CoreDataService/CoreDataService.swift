@@ -24,7 +24,7 @@ public protocol DatabaseServiceProtocol {
     func saveContext()
 }
 
-public public final class CoreDataService {
+public final class CoreDataService {
     
     private let fileName: String
     
