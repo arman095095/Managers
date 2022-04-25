@@ -22,6 +22,7 @@ public protocol AuthManagerProtocol: AnyObject {
                        userImage: Data,
                        completion: @escaping (Result<Void, AuthManagerError>) -> Void)
     func login(email: String, password: String, handler: @escaping (Result<Void, AuthManagerError>) -> Void)
+    func getAccount(completion: @escaping (Result<AccountModelProtocol, AuthManagerError>) -> ())
     func editAccount(username: String,
                      info: String,
                      sex: String,
@@ -68,6 +69,42 @@ public final class AuthManager {
 
 extension AuthManager: AuthManagerProtocol {
 
+    public func getAccount(completion: @escaping (Result<AccountModelProtocol, AuthManagerError>) -> ()) {
+        guard let accountID = quickAccessManager.userID else {
+            completion(.failure(.profile(value: .emptyProfile)))
+            return
+        }
+        profileService.getProfileInfo(userID: accountID, completion: { [weak self] result in
+            switch result {
+            case .success(let user):
+                self?.accountService.getBlockedIds(accountID: accountID) { result in
+                    switch result {
+                    case .success(let ids):
+                        let profile = ProfileModel(profile: user)
+                        let account = AccountModel(profile: profile, blockedIDs: Set(ids))
+                        self?.currentAccount = account
+                        guard !profile.removed else {
+                            completion(.failure(.profile(value: .profileRemoved)))
+                            return
+                        }
+                        self?.quickAccessManager.userID = accountID
+                        self?.quickAccessManager.userRemembered = true
+                        self?.accountService.setOnline(accountID: accountID)
+                        completion(.success((account)))
+                    case .failure(let error):
+                        completion(.failure(.another(error: error)))
+                    }
+                }
+            case .failure(let error):
+                guard case .getData = error as? GetUserInfoError else {
+                    completion(.failure(.another(error: error)))
+                    return
+                }
+                completion(.failure(.profile(value: .emptyProfile)))
+            }
+        })
+    }
+    
     public func isProfileBlocked(userID: String) -> Bool {
         guard let currentAccount = currentAccount else { return false }
         return currentAccount.blockedIds.contains(userID)
