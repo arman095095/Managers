@@ -53,17 +53,20 @@ public final class AuthManager {
     private let remoteStorage: RemoteStorageServiceProtocol
     private let quickAccessManager: QuickAccessManagerProtocol
     private let profileService: ProfilesServiceProtocol
+    private let database: DatabaseServiceProtocol
     
     public init(authService: AuthServiceProtocol,
                 accountService: AccountServiceProtocol,
                 remoteStorage: RemoteStorageServiceProtocol,
                 quickAccessManager: QuickAccessManagerProtocol,
-                profileService: ProfilesServiceProtocol) {
+                profileService: ProfilesServiceProtocol,
+                database: DatabaseServiceProtocol) {
         self.authService = authService
         self.accountService = accountService
         self.remoteStorage = remoteStorage
         self.quickAccessManager = quickAccessManager
         self.profileService = profileService
+        self.database = database
     }
 }
 
