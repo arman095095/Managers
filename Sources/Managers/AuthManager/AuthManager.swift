@@ -74,6 +74,7 @@ extension AuthManager: AuthManagerProtocol {
             completion(.failure(.profile(value: .emptyProfile)))
             return
         }
+        self.accountID = accountID
         profileService.getProfileInfo(userID: accountID, completion: { [weak self] result in
             switch result {
             case .success(let user):

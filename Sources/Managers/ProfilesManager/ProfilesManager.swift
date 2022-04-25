@@ -10,19 +10,16 @@ import NetworkServices
 
 public protocol ProfilesManagerProtocol: AnyObject {
     func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void)
-    func getFirstProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
-    func getNextProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
+    func getFirstProfiles(accountID: String, completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
+    func getNextProfiles(accountID: String, completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
 }
 
 public final class ProfilesManager: ProfilesManagerProtocol {
     
-    private let accountID: String
     private let profileService: ProfilesServiceProtocol
     
-    public init(accountID: String,
-                profileService: ProfilesServiceProtocol) {
+    public init(profileService: ProfilesServiceProtocol) {
         self.profileService = profileService
-        self.accountID = accountID
     }
     
     public func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void) {
@@ -37,14 +34,14 @@ public final class ProfilesManager: ProfilesManagerProtocol {
         }
     }
     
-    public func getFirstProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
+    public func getFirstProfiles(accountID: String, completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
         profileService.getFirstProfilesIDs { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success(let ids):
                 let group = DispatchGroup()
                 var profilesIDs = ids
-                if let firstIndex = profilesIDs.firstIndex(of: self.accountID) {
+                if let firstIndex = profilesIDs.firstIndex(of: accountID) {
                     profilesIDs.remove(at: firstIndex)
                 }
                 var profiles = [ProfileModelProtocol]()
@@ -69,14 +66,14 @@ public final class ProfilesManager: ProfilesManagerProtocol {
         }
     }
     
-    public func getNextProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
+    public func getNextProfiles(accountID: String, completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
         profileService.getNextProfilesIDs { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success(let ids):
                 let group = DispatchGroup()
                 var profilesIDs = ids
-                if let firstIndex = profilesIDs.firstIndex(of: self.accountID) {
+                if let firstIndex = profilesIDs.firstIndex(of: accountID) {
                     profilesIDs.remove(at: firstIndex)
                 }
                 var profiles = [ProfileModelProtocol]()
