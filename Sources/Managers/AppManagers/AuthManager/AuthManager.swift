@@ -9,6 +9,7 @@ import NetworkServices
 import Foundation
 
 public protocol AuthManagerProtocol: AnyObject {
+    var currentAccount: AccountModelProtocol? { get }
     func isProfileBlocked(userID: String) -> Bool
     func register(email: String, password: String, handler: @escaping (Result<Void, Error>) -> Void)
     func createAccount(username: String,
@@ -45,7 +46,7 @@ public protocol AuthManagerProtocol: AnyObject {
 public final class AuthManager {
     
     private var accountID: String?
-    private var currentAccount: AccountModelProtocol?
+    public private(set) var currentAccount: AccountModelProtocol?
     private var savedAccount: Account?
 
     private let authService: AuthServiceProtocol
