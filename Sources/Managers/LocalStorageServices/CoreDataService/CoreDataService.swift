@@ -8,18 +8,13 @@
 import CoreData
 import UIKit
 
-public protocol DatabaseServiceProtocol {
-    
+public protocol CoreDataServiceProtocol {
     func create<T: NSManagedObject>(type: T.Type, completion: (T) -> Void)
-    
-    func saveChanges(completion: (Result<Void, Error>) -> ())
-    
     func removeObjects<T: NSManagedObject>(type: T.Type)
-    
+    func getObject<T: NSManagedObject>(type: T.Type, predicate: NSPredicate) -> T?
     func getObjects<T: NSManagedObject>(type: T.Type,
                                         keySort: String?,
                                         ascending: Bool?) -> [T]
-    
     func removeObject<T: NSManagedObject>(object: T)
     func saveContext()
 }
@@ -60,25 +55,13 @@ public final class CoreDataService {
     }
 }
 
-extension CoreDataService: DatabaseServiceProtocol {
+extension CoreDataService: CoreDataServiceProtocol {
     
     public func create<T: NSManagedObject>(type: T.Type, completion: (T) -> Void) {
         guard let entity = NSEntityDescription.entity(forEntityName: String(describing: type.self), in: context) else { return }
-        
         let object = T(entity: entity, insertInto: context)
-        
         completion(object)
-        
-        saveChanges()
-    }
-    
-    public func saveChanges(completion: (Result<Void, Error>) -> () = { _ in }) {
-        do {
-            try context.save()
-            completion(.success(()))
-        } catch let error as NSError {
-            completion(.failure(error))
-        }
+        saveContext()
     }
     
     public func removeObjects<T: NSManagedObject>(type: T.Type) {
@@ -86,7 +69,7 @@ extension CoreDataService: DatabaseServiceProtocol {
         for object in objects {
             context.delete(object)
         }
-        saveChanges()
+        saveContext()
     }
     
     public func getObjects<T: NSManagedObject>(type: T.Type,
@@ -96,12 +79,19 @@ extension CoreDataService: DatabaseServiceProtocol {
         if let key = keySort, let ascending = ascending {
             let sortDescriptor = NSSortDescriptor(key: key, ascending: ascending)
             fetchRequest.sortDescriptors = [sortDescriptor] }
-        
         return (try? context.fetch(fetchRequest) as? [T]) ?? []
+    }
+    
+    public func getObject<T: NSManagedObject>(type: T.Type,
+                                              predicate: NSPredicate) -> T? {
+        let fetchRequest = type.fetchRequest()
+        fetchRequest.predicate = predicate
+        guard let results =  try? context.fetch(fetchRequest) as? [T] else { return nil }
+        return results.first
     }
     
     public func removeObject<T: NSManagedObject>(object: T) {
         context.delete(object)
-        saveChanges()
+        saveContext()
     }
 }

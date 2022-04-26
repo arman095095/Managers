@@ -17,14 +17,14 @@ public final class AuthManagerAssembly {
                   let remoteStorage = r.resolve(RemoteStorageServiceProtocol.self),
                   let quickAccessManager = r.resolve(QuickAccessManagerProtocol.self),
                   let profileService = r.resolve(ProfilesServiceProtocol.self),
-                  let coreDataService = r.resolve(DatabaseServiceProtocol.self) else { fatalError(ErrorMessage.dependency.localizedDescription)
+                  let cacheService = r.resolve(AccountCacheServiceProtocol.self) else { fatalError(ErrorMessage.dependency.localizedDescription)
             }
             return AuthManager(authService: authService,
                                accountService: accountService,
                                remoteStorage: remoteStorage,
                                quickAccessManager: quickAccessManager,
                                profileService: profileService,
-                               database: coreDataService)
+                               cacheService: cacheService)
         }.inObjectScope(.weak)
     }
 }

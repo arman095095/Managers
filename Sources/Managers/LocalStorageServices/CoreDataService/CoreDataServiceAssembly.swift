@@ -13,7 +13,7 @@ public enum CoreDataServiceAssembly {
         case model = "Model"
     }
     public static func assemble(container: Container) {
-        container.register(DatabaseServiceProtocol.self) { r in
+        container.register(CoreDataServiceProtocol.self) { r in
             CoreDataService(fileName: FileNames.model.rawValue)
         }
     }

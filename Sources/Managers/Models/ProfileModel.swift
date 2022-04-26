@@ -51,4 +51,29 @@ public struct ProfileModel: ProfileModelProtocol {
         self.lastActivity = profile.lastActivity
         self.postsCount = profile.postsCount
     }
+    
+    init?(profile: Profile) {
+        guard let userName = profile.userName,
+              let info = profile.info,
+              let sex = profile.sex,
+              let imageUrl = profile.imageUrl,
+              let id = profile.id,
+              let country = profile.country,
+              let city = profile.city,
+              let birthday = profile.birthday,
+              let lastActivity = profile.lastActivity else { return nil }
+        
+        self.userName = userName
+        self.info = info
+        self.sex = sex
+        self.imageUrl = imageUrl
+        self.id = id
+        self.country = country
+        self.city = city
+        self.birthday = birthday
+        self.removed = profile.removed
+        self.online = profile.online
+        self.lastActivity = lastActivity
+        self.postsCount = Int(profile.postsCount)
+    }
 }
