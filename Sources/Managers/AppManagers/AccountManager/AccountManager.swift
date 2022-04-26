@@ -20,6 +20,7 @@ public protocol ProfileInfoManagerProtocol: AnyObject {
 }
 
 public protocol AccountManagerProtocol: ProfileInfoManagerProtocol {
+    var account: AccountModelProtocol? { get }
     func launch(completion: @escaping (Result<Void, AccountManagerError>) -> ())
     func isProfileBlocked(userID: String) -> Bool
     func getAccount(completion: @escaping (Result<Void, AccountManagerError>) -> ())
@@ -42,8 +43,8 @@ public enum AccountManagerContext {
 
 public final class AccountManager {
     
+    public var account: AccountModelProtocol?
     private let accountID: String
-    private var account: AccountModelProtocol?
     private let authService: AuthServiceProtocol
     private let accountService: AccountServiceProtocol
     private let remoteStorageService: RemoteStorageServiceProtocol
