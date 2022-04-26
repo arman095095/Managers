@@ -11,21 +11,9 @@ public enum AuthManagerError: LocalizedError {
     
     case another(error: Error)
     case profile(value: Profile)
-    case remove(value: Remove)
-    case blocking(value: Block)
-    
-    public enum Block {
-        case cantBlock
-        case cantUnblock
-    }
-    
-    public enum Remove {
-        case cantRemove
-    }
     
     public enum Profile {
         case emptyProfile
-        case profileRemoved
     }
     
     public var errorDescription: String? {
@@ -36,20 +24,6 @@ public enum AuthManagerError: LocalizedError {
             switch value {
             case .emptyProfile:
                 return "Ошибка получения данных"
-            case .profileRemoved:
-                return "Вы удалили профиль"
-            }
-        case .remove(value: let value):
-            switch value {
-            case .cantRemove:
-                return "Ошибка при попытке удалить профиль"
-            }
-        case .blocking(value: let value):
-            switch value {
-            case .cantBlock:
-                return "Не удалось заблокировать пользователя"
-            case .cantUnblock:
-                return "Не удалось разблокировать пользователя"
             }
         }
     }

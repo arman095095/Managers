@@ -1,6 +1,10 @@
 
+import CoreData
+
 public protocol QuickAccessManagerProtocol: AnyObject {
     var userID: String? { get set }
+    var profileRemoved: Bool { get set }
+    var accounts: [String: NSManagedObjectID] { get set }
     func clearAll()
 }
 
@@ -17,9 +21,27 @@ final public class QuickAccessManager {
 
 extension QuickAccessManager: QuickAccessManagerProtocol {
     
+    public var profileRemoved: Bool {
+        get {
+            userDefaultsService.getData(item: .profileRemoved) as? Bool ?? false
+        }
+        set {
+            userDefaultsService.store(newValue, item: .profileRemoved)
+        }
+    }
+    
+    public var accounts: [String: NSManagedObjectID] {
+        get {
+            userDefaultsService.getData(item: .accounts) as? [String: NSManagedObjectID] ?? [:]
+        }
+        set {
+            userDefaultsService.store(newValue, item: .accounts)
+        }
+    }
+    
     public var userID: String? {
         get {
-            guard userRemembered else { return nil }
+            guard userRemembered, !profileRemoved else { return nil }
             guard case let .success(data) = keychainService.getData(for: .userID) else { return nil }
             return String(data: data, encoding: .utf8)
         }
@@ -42,6 +64,7 @@ extension QuickAccessManager: QuickAccessManagerProtocol {
 }
 
 private extension QuickAccessManager {
+
     var userRemembered: Bool {
         get {
             userDefaultsService.getData(item: .userRemembered) as? Bool ?? false
