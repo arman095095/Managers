@@ -8,19 +8,21 @@
 import NetworkServices
 import Foundation
 
-public protocol AccountManagerProtocol: AnyObject {
-    func launch(completion: @escaping (Result<Void, AccountManagerError>) -> ())
-    func isProfileBlocked(userID: String) -> Bool
-    func getAccount(completion: @escaping (Result<Void, AccountManagerError>) -> ())
-    func editAccount(username: String,
+public protocol ProfileInfoManagerProtocol: AnyObject {
+    func sendProfile(username: String,
                      info: String,
                      sex: String,
                      country: String,
                      city: String,
                      birthday: String,
-                     image: Data?,
-                     imageURL: URL?,
-                     completion: @escaping (Result<Void, AccountManagerError>) -> Void)
+                     image: Data,
+                     completion: @escaping (Result<AccountModelProtocol, Error>) -> Void)
+}
+
+public protocol AccountManagerProtocol: ProfileInfoManagerProtocol {
+    func launch(completion: @escaping (Result<Void, AccountManagerError>) -> ())
+    func isProfileBlocked(userID: String) -> Bool
+    func getAccount(completion: @escaping (Result<Void, AccountManagerError>) -> ())
     func recoverAccount(completion: @escaping (Result<Void, AccountManagerError>) -> Void)
     func removeAccount(completion: @escaping (Result<Void, AccountManagerError>) -> Void)
     func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], AccountManagerError>) -> Void)
@@ -217,72 +219,42 @@ extension AccountManager: AccountManagerProtocol {
         }
     }
     
-    public func editAccount(username: String,
+    public func sendProfile(username: String,
                             info: String,
                             sex: String,
                             country: String,
                             city: String,
                             birthday: String,
-                            image: Data?,
-                            imageURL: URL?,
-                            completion: @escaping (Result<Void, AccountManagerError>) -> Void) {
-        if let imageData = image {
-            remoteStorageService.uploadProfile(accountID: accountID, image: imageData) { [weak self] (result) in
-                guard let self = self else { return }
-                switch result {
-                case .success(let url):
-                    let edited = ProfileNetworkModel(userName: username,
-                                                     imageName: url.absoluteString,
-                                                     identifier: self.accountID,
-                                                     sex: sex,
-                                                     info: info,
-                                                     birthDay: birthday,
-                                                     country: country,
-                                                     city: city)
-                    self.accountService.editAccount(accountID: self.accountID,
-                                                    profile: edited) { [weak self] result in
-                        guard let self = self,
-                              let currentAccount = self.account else { return }
-                        switch result {
-                        case .success:
-                            let model = ProfileModel(profile: edited)
-                            self.account?.profile = model
-                            self.cacheService.store(accountModel: currentAccount)
-                            completion(.success(()))
-                        case .failure(let error):
-                            completion(.failure(.another(error: error)))
-                        }
+                            image: Data,
+                            completion: @escaping (Result<AccountModelProtocol, Error>) -> Void) {
+        remoteStorageService.uploadProfile(accountID: accountID, image: image) { [weak self] (result) in
+            guard let self = self else { return }
+            switch result {
+            case .success(let url):
+                let edited = ProfileNetworkModel(userName: username,
+                                                 imageName: url.absoluteString,
+                                                 identifier: self.accountID,
+                                                 sex: sex,
+                                                 info: info,
+                                                 birthDay: birthday,
+                                                 country: country,
+                                                 city: city)
+                self.accountService.editAccount(accountID: self.accountID,
+                                                profile: edited) { [weak self] result in
+                    guard let self = self,
+                          let currentAccount = self.account else { return }
+                    switch result {
+                    case .success:
+                        let model = ProfileModel(profile: edited)
+                        self.account?.profile = model
+                        self.cacheService.store(accountModel: currentAccount)
+                        completion(.success((currentAccount)))
+                    case .failure(let error):
+                        completion(.failure(error))
                     }
-                case .failure(let error):
-                    completion(.failure(.another(error: error)))
                 }
-            }
-        } else {
-            guard let imageURL = imageURL?.absoluteString else {
-                completion(.failure(.profile(value: .emptyProfile)))
-                return
-            }
-            let edited = ProfileNetworkModel(userName: username,
-                                             imageName: imageURL,
-                                             identifier: accountID,
-                                             sex: sex,
-                                             info: info,
-                                             birthDay: birthday,
-                                             country: country,
-                                             city: city)
-            accountService.editAccount(accountID: accountID,
-                                       profile: edited) { [weak self] result in
-                guard let self = self,
-                      let currentAccount = self.account else { return }
-                switch result {
-                case .success:
-                    let model = ProfileModel(profile: edited)
-                    self.account?.profile = model
-                    self.cacheService.store(accountModel: currentAccount)
-                    completion(.success(()))
-                case .failure(let error):
-                    completion(.failure(.another(error: error)))
-                }
+            case .failure(let error):
+                completion(.failure(error))
             }
         }
     }
@@ -305,7 +277,7 @@ extension AccountManager: AccountManagerProtocol {
 
 private extension AccountManager {
     func afterAuthorization(account: AccountModelProtocol,
-                                    completion: @escaping (Result<Void, AccountManagerError>) -> ()) {
+                            completion: @escaping (Result<Void, AccountManagerError>) -> ()) {
         self.account = account
         self.cacheService.store(accountModel: account)
         guard !account.profile.removed else {

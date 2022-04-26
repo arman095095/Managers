@@ -8,21 +8,13 @@
 import NetworkServices
 import Foundation
 
-public protocol AuthManagerProtocol: AnyObject {
+public protocol AuthManagerProtocol: ProfileInfoManagerProtocol {
     func register(email: String,
                   password: String,
                   handler: @escaping (Result<Void, Error>) -> Void)
     func login(email: String,
                password: String,
                handler: @escaping (Result<AccountModelProtocol, AuthManagerError>) -> Void)
-    func createAccount(username: String,
-                       info: String,
-                       sex: String,
-                       country: String,
-                       city: String,
-                       birthday: String,
-                       userImage: Data,
-                       completion: @escaping (Result<AccountModelProtocol, AuthManagerError>) -> Void)
 }
 
 public final class AuthManager {
@@ -65,16 +57,16 @@ extension AuthManager: AuthManagerProtocol {
         }
     }
     
-    public func createAccount(username: String,
-                              info: String,
-                              sex: String,
-                              country: String,
-                              city: String,
-                              birthday: String,
-                              userImage: Data,
-                              completion: @escaping (Result<AccountModelProtocol, AuthManagerError>) -> Void) {
+    public func sendProfile(username: String,
+                            info: String,
+                            sex: String,
+                            country: String,
+                            city: String,
+                            birthday: String,
+                            image: Data,
+                            completion: @escaping (Result<AccountModelProtocol, Error>) -> Void) {
         guard let accountID = accountID else { return }
-        remoteStorageService.uploadProfile(accountID: accountID, image: userImage) { [weak self] (result) in
+        remoteStorageService.uploadProfile(accountID: accountID, image: image) { [weak self] (result) in
             guard let self = self else { return }
             switch result {
             case .success(let url):
@@ -95,11 +87,11 @@ extension AuthManager: AuthManagerProtocol {
                         self?.quickAccessManager.userID = accountID
                         completion(.success((account)))
                     case .failure(let error):
-                        completion(.failure(.another(error: error)))
+                        completion(.failure(error))
                     }
                 }
             case .failure(let error):
-                completion(.failure(.another(error: error)))
+                completion(.failure(error))
             }
         }
     }
