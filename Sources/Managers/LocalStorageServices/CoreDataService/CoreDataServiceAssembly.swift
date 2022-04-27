@@ -10,7 +10,7 @@ import Swinject
 
 public enum CoreDataServiceAssembly {
     enum FileNames: String {
-        case model = "Hello"
+        case model = "Model"
     }
     public static func assemble(container: Container) {
         container.register(CoreDataServiceProtocol.self) { r in
