@@ -12,7 +12,6 @@ public protocol CoreDataServiceProtocol {
     func create<T: NSManagedObject>(type: T.Type, completion: (T) -> Void)
     func removeObjects<T: NSManagedObject>(type: T.Type)
     func getObject<T: NSManagedObject>(type: T.Type, predicate: NSPredicate) -> T?
-    func getObject<T: NSManagedObject>(type: T.Type, id: NSManagedObjectID) -> T?
     func getObjects<T: NSManagedObject>(type: T.Type,
                                         keySort: String?,
                                         ascending: Bool?) -> [T]
@@ -59,13 +58,10 @@ public final class CoreDataService {
 extension CoreDataService: CoreDataServiceProtocol {
     
     public func create<T: NSManagedObject>(type: T.Type, completion: (T) -> Void) {
-        completion(T(context: context))
+        guard let entity = NSEntityDescription.entity(forEntityName: String(describing: type.self), in: context) else { fatalError() }
+        let object = T(entity: entity, insertInto: context)
+        completion(object)
         saveContext()
-    }
-
-    public func getObject<T: NSManagedObject>(type: T.Type, id: NSManagedObjectID) -> T? {
-        let result = context.object(with: id)
-        return result as? T
     }
     
     public func removeObjects<T: NSManagedObject>(type: T.Type) {

@@ -29,11 +29,6 @@ public final class AccountCacheService {
 extension AccountCacheService: AccountCacheServiceProtocol {
     
     public func storedAccount(with id: String) -> AccountModelProtocol? {
-        if let objectID = quickAccessManager.accounts[id] {
-            guard let account = coreDataService.getObject(type: Account.self,
-                                                  id: objectID) else { return nil }
-            return AccountModel(account: account)
-        }
         guard let account = object(with: id) else { return nil }
         return AccountModel(account: account)
     }
@@ -64,10 +59,6 @@ private extension AccountCacheService {
     func object(with id: String) -> Account? {
         coreDataService.getObject(type: Account.self,
                           predicate: NSPredicate(format: "SELF.id == %@", "\(id)"))
-    }
-    
-    func objectID(with id: String) -> NSManagedObjectID? {
-        object(with: id)?.objectID
     }
     
     func update(account: Account, model: AccountModelProtocol) {
