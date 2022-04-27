@@ -20,12 +20,12 @@ public enum AccountManagerAssembly {
                   let cacheService = r.resolve(AccountCacheServiceProtocol.self) else { fatalError(ErrorMessage.dependency.localizedDescription)
             }
             return AccountManager(context: context,
-                           authService: authService,
-                           accountService: accountService,
-                           remoteStorage: remoteStorage,
-                           quickAccessManager: quickAccessManager,
-                           profileService: profileService,
-                           cacheService: cacheService)
+                                  authService: authService,
+                                  accountService: accountService,
+                                  remoteStorage: remoteStorage,
+                                  quickAccessManager: quickAccessManager,
+                                  profileService: profileService,
+                                  cacheService: cacheService)
         }
     }
 }
