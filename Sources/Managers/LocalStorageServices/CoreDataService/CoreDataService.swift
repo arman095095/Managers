@@ -57,18 +57,17 @@ public final class CoreDataService {
 }
 
 extension CoreDataService: CoreDataServiceProtocol {
-
-    public func getObject<T: NSManagedObject>(type: T.Type, id: NSManagedObjectID) -> T? {
-        let result = context.object(with: id)
-        return result as? T
-    }
-
+    
     public func create<T: NSManagedObject>(type: T.Type, completion: (T) -> Void) {
-        print(String(describing: type.self))
         guard let entity = NSEntityDescription.entity(forEntityName: String(describing: type.self), in: context) else { return }
         let object = T(entity: entity, insertInto: context)
         completion(object)
         saveContext()
+    }
+
+    public func getObject<T: NSManagedObject>(type: T.Type, id: NSManagedObjectID) -> T? {
+        let result = context.object(with: id)
+        return result as? T
     }
     
     public func removeObjects<T: NSManagedObject>(type: T.Type) {
