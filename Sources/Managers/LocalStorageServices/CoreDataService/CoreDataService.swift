@@ -24,7 +24,7 @@ public final class CoreDataService {
     private let fileName: String
     
     public init(fileName: String) {
-        self.fileName = "Model"//fileName
+        self.fileName = fileName
     }
     
     private var context: NSManagedObjectContext {
