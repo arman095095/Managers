@@ -59,9 +59,7 @@ public final class CoreDataService {
 extension CoreDataService: CoreDataServiceProtocol {
     
     public func create<T: NSManagedObject>(type: T.Type, completion: (T) -> Void) {
-        guard let entity = NSEntityDescription.entity(forEntityName: String(describing: type.self), in: context) else { return }
-        let object = T(entity: entity, insertInto: context)
-        completion(object)
+        completion(T(context: context))
         saveContext()
     }
 
