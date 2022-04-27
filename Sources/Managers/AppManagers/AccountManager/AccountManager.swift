@@ -21,16 +21,16 @@ public protocol ProfileInfoManagerProtocol: AnyObject {
 
 public protocol AccountManagerProtocol: ProfileInfoManagerProtocol {
     var account: AccountModelProtocol? { get }
-    func launch(completion: @escaping (Result<Void, AccountManagerError>) -> ())
+    func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
     func isProfileBlocked(userID: String) -> Bool
-    func getAccount(completion: @escaping (Result<Void, AccountManagerError>) -> ())
-    func recoverAccount(completion: @escaping (Result<Void, AccountManagerError>) -> Void)
-    func removeAccount(completion: @escaping (Result<Void, AccountManagerError>) -> Void)
-    func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], AccountManagerError>) -> Void)
+    func getAccount(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
+    func recoverAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void)
+    func removeAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void)
+    func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
     func blockProfile(_ id: String,
-                      completion: @escaping (Result<Void, AccountManagerError>) -> Void)
+                      completion: @escaping (Result<Void, AccountManagerError.Block>) -> Void)
     func unblockProfile(_ id: String,
-                        completion: @escaping (Result<Void, AccountManagerError>) -> Void)
+                        completion: @escaping (Result<Void, AccountManagerError.Block>) -> Void)
     func setOffline()
     func setOnline()
     func signOut()
@@ -79,7 +79,7 @@ public final class AccountManager {
 
 extension AccountManager: AccountManagerProtocol {
     
-    public func launch(completion: @escaping (Result<Void, AccountManagerError>) -> ()) {
+    public func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         switch context {
         case .afterAuthorization(_, let account):
             afterAuthorization(account: account, completion: completion)
@@ -94,7 +94,7 @@ extension AccountManager: AccountManagerProtocol {
         }
     }
     
-    public func getAccount(completion: @escaping (Result<Void, AccountManagerError>) -> ()) {
+    public func getAccount(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         profileService.getProfileInfo(userID: accountID) { [weak self] result in
             guard let self = self else { return }
             switch result {
@@ -115,7 +115,7 @@ extension AccountManager: AccountManagerProtocol {
                     completion(.failure(.another(error: error)))
                     return
                 }
-                completion(.failure(.profile(value: .emptyProfile)))
+                completion(.failure(.emptyProfile))
             }
         }
     }
@@ -125,7 +125,7 @@ extension AccountManager: AccountManagerProtocol {
         return currentAccount.blockedIds.contains(userID)
     }
     
-    public func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], AccountManagerError>) -> Void) {
+    public func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
         accountService.getBlockedIds(accountID: accountID) { [weak self] result in
             guard let self = self,
                   let currentAccount = self.account else { return }
@@ -151,13 +151,13 @@ extension AccountManager: AccountManagerProtocol {
                     completion(.success(profiles))
                 }
             case .failure(let error):
-                completion(.failure(.another(error: error)))
+                completion(.failure(error))
             }
         }
     }
     
     public func blockProfile(_ id: String,
-                             completion: @escaping (Result<Void, AccountManagerError>) -> Void) {
+                             completion: @escaping (Result<Void, AccountManagerError.Block>) -> Void) {
         accountService.blockUser(accountID: accountID,
                                  userID: id) { [weak self] result in
             guard let self = self,
@@ -168,13 +168,13 @@ extension AccountManager: AccountManagerProtocol {
                 self.cacheService.store(accountModel: currentAccount)
                 completion(.success(()))
             case .failure:
-                completion(.failure(.blocking(value: .cantBlock)))
+                completion(.failure(.cantBlock))
             }
         }
     }
     
     public func unblockProfile(_ id: String,
-                               completion: @escaping (Result<Void, AccountManagerError>) -> Void) {
+                               completion: @escaping (Result<Void, AccountManagerError.Block>) -> Void) {
         accountService.unblockUser(accountID: accountID,
                                    userID: id) { [weak self] result in
             guard let self = self,
@@ -186,15 +186,15 @@ extension AccountManager: AccountManagerProtocol {
                 self.cacheService.store(accountModel: currentAccount)
                 completion(.success(()))
             case .failure:
-                completion(.failure(.blocking(value: .cantUnblock)))
+                completion(.failure(.cantUnblock))
             }
         }
     }
     
-    public func removeAccount(completion: @escaping (Result<Void, AccountManagerError>) -> Void) {
+    public func removeAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void) {
         accountService.removeAccount(accountID: accountID) { [weak self] error in
             if let _ = error {
-                completion(.failure(.remove(value: .cantRemove)))
+                completion(.failure(.cantRemove))
                 return
             }
             self?.quickAccessManager.profileRemoved = true
@@ -203,7 +203,7 @@ extension AccountManager: AccountManagerProtocol {
         }
     }
     
-    public func recoverAccount(completion: @escaping (Result<Void, AccountManagerError>) -> Void) {
+    public func recoverAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void) {
         accountService.recoverAccount(accountID: accountID) { [weak self] result in
             guard let self = self,
                   let currentAccount = self.account else { return }
@@ -214,8 +214,8 @@ extension AccountManager: AccountManagerProtocol {
                 self.quickAccessManager.profileRemoved = false
                 self.cacheService.store(accountModel: currentAccount)
                 completion(.success(()))
-            case .failure(let error):
-                completion(.failure(.another(error: error)))
+            case .failure:
+                completion(.failure(.cantRecover))
             }
         }
     }
@@ -278,12 +278,12 @@ extension AccountManager: AccountManagerProtocol {
 
 private extension AccountManager {
     func afterAuthorization(account: AccountModelProtocol,
-                            completion: @escaping (Result<Void, AccountManagerError>) -> ()) {
+                            completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         self.account = account
         self.cacheService.store(accountModel: account)
         guard !account.profile.removed else {
             self.quickAccessManager.profileRemoved = true
-            completion(.failure(.profile(value: .profileRemoved)))
+            completion(.failure(.profileRemoved))
             return
         }
         self.accountService.setOnline(accountID: self.accountID)

@@ -14,38 +14,11 @@ public enum AccountManagerError: LocalizedError {
     case remove(value: Remove)
     case blocking(value: Block)
     
-    public enum Block {
+    public enum Block: LocalizedError {
         case cantBlock
         case cantUnblock
-    }
-    
-    public enum Remove {
-        case cantRemove
-    }
-    
-    public enum Profile {
-        case emptyProfile
-        case profileRemoved
-    }
-    
-    public var errorDescription: String? {
-        switch self {
-        case .another(let error):
-            return error.localizedDescription
-        case .profile(let value):
-            switch value {
-            case .emptyProfile:
-                return "Ошибка получения данных"
-            case .profileRemoved:
-                return "Вы удалили профиль"
-            }
-        case .remove(value: let value):
-            switch value {
-            case .cantRemove:
-                return "Ошибка при попытке удалить профиль"
-            }
-        case .blocking(value: let value):
-            switch value {
+        public var errorDescription: String? {
+            switch self {
             case .cantBlock:
                 return "Не удалось заблокировать пользователя"
             case .cantUnblock:
@@ -53,4 +26,34 @@ public enum AccountManagerError: LocalizedError {
             }
         }
     }
+    
+    public enum Remove: LocalizedError {
+        case cantRemove
+        case cantRecover
+        public var errorDescription: String? {
+            switch self {
+            case .cantRemove:
+                return "Ошибка при попытке удалить профиль"
+            case .cantRecover:
+                return "Ошибка при попытке восстановления профиля"
+            }
+        }
+    }
+    
+    public enum Profile: LocalizedError {
+        case emptyProfile
+        case profileRemoved
+        case another(error: Error)
+        public var errorDescription: String? {
+            switch self {
+            case .emptyProfile:
+                return "Ошибка получения данных"
+            case .profileRemoved:
+                return "Вы удалили профиль"
+            case .another(error: let error):
+                return error.localizedDescription
+            }
+        }
+    }
 }
+
