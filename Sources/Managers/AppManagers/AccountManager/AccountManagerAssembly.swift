@@ -28,6 +28,6 @@ public enum AccountManagerAssembly {
                                   quickAccessManager: quickAccessManager,
                                   profileService: profileService,
                                   cacheService: cacheService)
-        }
+        }.inObjectScope(.weak)
     }
 }
