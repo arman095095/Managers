@@ -4,7 +4,6 @@ import CoreData
 public protocol QuickAccessManagerProtocol: AnyObject {
     var userID: String? { get set }
     var profileRemoved: Bool { get set }
-    var accounts: [String: NSManagedObjectID] { get set }
     func clearAll()
 }
 
@@ -27,15 +26,6 @@ extension QuickAccessManager: QuickAccessManagerProtocol {
         }
         set {
             userDefaultsService.store(newValue, item: .profileRemoved)
-        }
-    }
-    
-    public var accounts: [String: NSManagedObjectID] {
-        get {
-            userDefaultsService.getData(item: .accounts) as? [String: NSManagedObjectID] ?? [:]
-        }
-        set {
-            userDefaultsService.store(newValue, item: .accounts)
         }
     }
     

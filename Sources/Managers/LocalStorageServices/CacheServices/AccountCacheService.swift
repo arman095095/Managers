@@ -39,64 +39,64 @@ extension AccountCacheService: AccountCacheServiceProtocol {
             update(account: account, model: accountModel)
             return
         }
-        var accountObject: Account?
-        coreDataService.create(type: Account.self) { account in
-            account.id = accountModel.profile.id
-            account.blockedIDs = accountModel.blockedIds
-            account.profile = self.create(profileModel: accountModel.profile)
-            accountObject = account
-        }
-        if let accountObject = accountObject {
-            var accounts = quickAccessManager.accounts
-            accounts[accountID] = accountObject.objectID
-            quickAccessManager.accounts = accounts
-        }
+        create(accountModel: accountModel)
     }
 }
 
 private extension AccountCacheService {
     
     func object(with id: String) -> Account? {
-        coreDataService.getObject(type: Account.self,
-                          predicate: NSPredicate(format: "SELF.id == %@", "\(id)"))
+        coreDataService.model(Account.self, id: id)
+    }
+    
+    func fillFields(profile: Profile,
+                    model: ProfileModelProtocol) {
+        profile.userName = model.userName
+        profile.info = model.info
+        profile.sex = model.sex
+        profile.imageUrl = model.imageUrl
+        profile.id = model.id
+        profile.country = model.country
+        profile.city = model.city
+        profile.birthday = model.birthday
+        profile.removed = model.removed
+        profile.online = model.online
+        profile.lastActivity = model.lastActivity
+        profile.postsCount = Int16(model.postsCount)
+    }
+    
+    func fillFields(account: Account,
+                    model: AccountModelProtocol) {
+        account.blockedIDs = model.blockedIds
+        account.id = model.profile.id
+    }
+    
+    func create(accountModel: AccountModelProtocol) {
+        coreDataService.initModel(Account.self) { account in
+            fillFields(account: account,
+                       model: accountModel)
+            account.profile = coreDataService.initModel(Profile.self, initHandler: { profile in
+                fillFields(profile: profile,
+                           model: accountModel.profile)
+            })
+        }
     }
     
     func update(account: Account, model: AccountModelProtocol) {
-        guard let profile = account.profile else { return }
-        account.id = profile.id
-        account.blockedIDs = model.blockedIds
-        profile.userName = model.profile.userName
-        profile.info = model.profile.info
-        profile.sex = model.profile.sex
-        profile.imageUrl = model.profile.imageUrl
-        profile.id = model.profile.id
-        profile.country = model.profile.country
-        profile.city = model.profile.city
-        profile.birthday = model.profile.birthday
-        profile.removed = model.profile.removed
-        profile.online = model.profile.online
-        profile.lastActivity = model.profile.lastActivity
-        profile.postsCount = Int16(model.profile.postsCount)
-        coreDataService.saveContext()
-    }
-
-    func create(profileModel: ProfileModelProtocol) -> Profile? {
-        var profileResult: Profile?
-        coreDataService.create(type: Profile.self) { profile in
-            profile.userName = profileModel.userName
-            profile.info = profileModel.info
-            profile.sex = profileModel.sex
-            profile.imageUrl = profileModel.imageUrl
-            profile.id = profileModel.id
-            profile.country = profileModel.country
-            profile.city = profileModel.city
-            profile.birthday = profileModel.birthday
-            profile.removed = profileModel.removed
-            profile.online = profileModel.online
-            profile.lastActivity = profileModel.lastActivity
-            profile.postsCount = Int16(profileModel.postsCount)
-            profileResult = profile
+        
+        coreDataService.update(account) { account in
+            fillFields(account: account, model: model)
         }
-        return profileResult
+        guard let profile = account.profile else {
+            coreDataService.initModel(Profile.self) { profile in
+                fillFields(profile: profile,
+                           model: model.profile)
+            }
+            return
+        }
+        coreDataService.update(profile) { profile in
+            fillFields(profile: profile,
+                       model: model.profile)
+        }
     }
 }
