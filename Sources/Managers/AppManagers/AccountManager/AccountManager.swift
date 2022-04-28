@@ -21,7 +21,7 @@ public protocol ProfileInfoManagerProtocol: AnyObject {
 
 public protocol AccountManagerProtocol: ProfileInfoManagerProtocol {
     var account: AccountModelProtocol? { get }
-    func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
+    //func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
     func isProfileBlocked(userID: String) -> Bool
     func getAccount(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
     func recoverAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void)
@@ -69,30 +69,34 @@ public final class AccountManager {
         self.cacheService = cacheService
         self.context = context
         switch context {
-        case .afterAuthorization(let accountID, _):
+        case .afterAuthorization(let accountID, let account):
             self.accountID = accountID
+            self.account = account
         case .afterLaunch(let accountID):
             self.accountID = accountID
+            self.account = cacheService.storedAccount(with: accountID)
         }
     }
 }
 
 extension AccountManager: AccountManagerProtocol {
     
-    public func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
-        switch context {
+    /*public func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
+        switch context
+        /*switch context {
         case .afterAuthorization(_, let account):
             afterAuthorization(account: account, completion: completion)
         case .afterLaunch(let accountID):
-            if let account = cacheService.storedAccount(with: accountID) {
+            
+           /* if let account = cacheService.storedAccount(with: accountID) {
                 self.account = account
                 completion(.success(()))
                 getAccount { _ in }
             } else {
                 getAccount(completion: completion)
-            }
-        }
-    }
+            }*/
+        }*/
+    }*/
     
     public func getAccount(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         profileService.getProfileInfo(userID: accountID) { [weak self] result in
