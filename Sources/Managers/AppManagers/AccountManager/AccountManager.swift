@@ -9,6 +9,11 @@ import NetworkServices
 import Foundation
 import Swinject
 
+enum ProfileInfoManagersName: String {
+    case create
+    case edit
+}
+
 public protocol ProfileInfoManagerProtocol: AnyObject {
     func sendProfile(username: String,
                      info: String,
