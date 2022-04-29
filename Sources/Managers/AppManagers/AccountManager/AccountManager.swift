@@ -9,7 +9,7 @@ import NetworkServices
 import Foundation
 import Swinject
 
-enum ProfileInfoManagersName: String {
+public enum ProfileInfoManagersName: String {
     case create
     case edit
 }
