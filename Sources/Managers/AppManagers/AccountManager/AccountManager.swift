@@ -52,7 +52,7 @@ public final class AccountManager {
     
     private let quickAccessManager: QuickAccessManagerProtocol
     private let cacheService: AccountCacheServiceProtocol
-    private let context: AccountManagerContext
+    private var context: AccountManagerContext
     
     public init(context: AccountManagerContext,
                 authService: AuthServiceProtocol,
@@ -83,8 +83,9 @@ extension AccountManager: AccountManagerProtocol {
     
     public func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         switch context {
-        case .afterAuthorization(_, let account):
+        case .afterAuthorization(let accountID, let account):
             afterAuthorization(account: account, completion: completion)
+            self.context = .afterLaunch(accountID: accountID)
         case .afterLaunch(let accountID):
             if let account = cacheService.storedAccount(with: accountID) {
                 self.account = account
