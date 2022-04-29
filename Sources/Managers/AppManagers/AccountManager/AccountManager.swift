@@ -10,8 +10,8 @@ import Foundation
 import Swinject
 
 public enum ProfileInfoManagersName: String {
-    case create
-    case edit
+    case auth
+    case account
 }
 
 public protocol ProfileInfoManagerProtocol: AnyObject {
