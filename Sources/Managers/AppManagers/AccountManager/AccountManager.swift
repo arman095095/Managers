@@ -21,7 +21,7 @@ public protocol ProfileInfoManagerProtocol: AnyObject {
 
 public protocol AccountManagerProtocol: ProfileInfoManagerProtocol {
     var account: AccountModelProtocol? { get }
-    //func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
+    func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
     func isProfileBlocked(userID: String) -> Bool
     func getAccount(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
     func recoverAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void)
@@ -81,22 +81,20 @@ public final class AccountManager {
 
 extension AccountManager: AccountManagerProtocol {
     
-    /*public func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
-        switch context
-        /*switch context {
+    public func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
+        switch context {
         case .afterAuthorization(_, let account):
             afterAuthorization(account: account, completion: completion)
         case .afterLaunch(let accountID):
-            
-           /* if let account = cacheService.storedAccount(with: accountID) {
+            if let account = cacheService.storedAccount(with: accountID) {
                 self.account = account
                 completion(.success(()))
                 getAccount { _ in }
             } else {
                 getAccount(completion: completion)
-            }*/
-        }*/
-    }*/
+            }
+        }
+    }
     
     public func getAccount(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         profileService.getProfileInfo(userID: accountID) { [weak self] result in
