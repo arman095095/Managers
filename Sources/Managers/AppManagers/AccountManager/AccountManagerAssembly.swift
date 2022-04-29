@@ -9,10 +9,11 @@ import Foundation
 import Swinject
 import NetworkServices
 
-public enum AccountManagerAssembly {
-    public static func assemble(container: Container) {
-        CoreDataServiceAssembly.assemble(container: container)
-        AccountCacheServiceAssembly.assemble(container: container)
+public final class AccountManagerAssembly: Assembly {
+    
+    public init() { }
+    
+    public func assemble(container: Container) {
         container.register(AccountManagerProtocol.self) { r in
             guard let authService = r.resolve(AuthServiceProtocol.self),
                   let accountService = r.resolve(AccountServiceProtocol.self),

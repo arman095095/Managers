@@ -9,8 +9,11 @@ import Swinject
 import Foundation
 import NetworkServices
 
-public final class AuthManagerAssembly {
-    public static func assemble(container: Container) {
+public final class AuthManagerAssembly: Assembly {
+    
+    public init() { }
+    
+    public func assemble(container: Container) {
         container.register(AuthManagerProtocol.self) { r in
             guard let authService = r.resolve(AuthServiceProtocol.self),
                   let accountService = r.resolve(AccountServiceProtocol.self),

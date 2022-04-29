@@ -9,17 +9,11 @@ import Foundation
 import Swinject
 import NetworkServices
 
-public final class QuickAccessManagerAssembly {
-    public static func assemble(container: Container) {
+public final class QuickAccessManagerAssembly: Assembly {
 
-        container.register(KeychainServiceProtocol.self) { r in
-            KeychainService(configuration: KeychainConfiguration(account: "test"))
-        }
+    public init() { }
     
-        container.register(UserDefaultsServiceProtocol.self) { r in
-            UserDefaultsService()
-        }
-    
+    public func assemble(container: Container) {
         container.register(QuickAccessManagerProtocol.self) { r in
             guard let userDefaultsService = r.resolve(UserDefaultsServiceProtocol.self),
                   let keychainService = r.resolve(KeychainServiceProtocol.self) else { fatalError() }
