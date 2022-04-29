@@ -31,6 +31,6 @@ public final class AccountManagerAssembly: Assembly {
                                   profileService: profileService,
                                   cacheService: cacheService,
                                   container: container)
-        }.implements(ProfileInfoManagerProtocol.self).inObjectScope(.weak)
+        }.implements(ProfileInfoManagerProtocol.self, name: ProfileInfoManagersName.account.rawValue).inObjectScope(.weak)
     }
 }

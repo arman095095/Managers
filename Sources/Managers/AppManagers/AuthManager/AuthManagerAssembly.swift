@@ -26,7 +26,7 @@ public final class AuthManagerAssembly: Assembly {
                                remoteStorage: remoteStorage,
                                quickAccessManager: quickAccessManager,
                                profileService: profileService)
-        }.implements(ProfileInfoManagerProtocol.self).inObjectScope(.weak)
+        }.implements(ProfileInfoManagerProtocol.self, name: ProfileInfoManagersName.auth.rawValue).inObjectScope(.weak)
     }
 }
 
