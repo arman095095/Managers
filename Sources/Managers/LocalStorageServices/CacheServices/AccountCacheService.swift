@@ -16,13 +16,9 @@ public protocol AccountCacheServiceProtocol {
 public final class AccountCacheService {
 
     private let coreDataService: CoreDataServiceProtocol
-    private let quickAccessManager: QuickAccessManagerProtocol
     
-    public init(coreDataService: CoreDataServiceProtocol,
-                quickAccessManager: QuickAccessManagerProtocol) {
+    public init(coreDataService: CoreDataServiceProtocol) {
         self.coreDataService = coreDataService
-        self.quickAccessManager = quickAccessManager
-        
     }
 }
 
