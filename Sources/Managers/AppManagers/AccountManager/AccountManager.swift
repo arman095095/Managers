@@ -7,6 +7,7 @@
 
 import NetworkServices
 import Foundation
+import Swinject
 
 public protocol ProfileInfoManagerProtocol: AnyObject {
     func sendProfile(username: String,
@@ -20,10 +21,11 @@ public protocol ProfileInfoManagerProtocol: AnyObject {
 }
 
 public protocol AccountManagerProtocol: ProfileInfoManagerProtocol {
-    var account: AccountModelProtocol? { get }
-    func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
+    func processAccountAfterSuccessAuthorization(account: AccountModelProtocol,
+                                                 completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
+    func processAccountAfterLaunch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
     func isProfileBlocked(userID: String) -> Bool
-    func getAccount(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
+    func getAccount(completion: @escaping (Result<AccountModelProtocol, AccountManagerError.Profile>) -> ())
     func recoverAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void)
     func removeAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void)
     func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
@@ -43,61 +45,70 @@ public enum AccountManagerContext {
 
 public final class AccountManager {
     
-    public var account: AccountModelProtocol?
+    private var account: AccountModelProtocol?
     private let accountID: String
     private let authService: AuthServiceProtocol
     private let accountService: AccountServiceProtocol
     private let remoteStorageService: RemoteStorageServiceProtocol
     private let profileService: ProfilesServiceProtocol
-    
+    private let container: Container
     private let quickAccessManager: QuickAccessManagerProtocol
     private let cacheService: AccountCacheServiceProtocol
-    private var context: AccountManagerContext
     
-    public init(context: AccountManagerContext,
+    public init(accountID: String,
                 authService: AuthServiceProtocol,
                 accountService: AccountServiceProtocol,
                 remoteStorage: RemoteStorageServiceProtocol,
                 quickAccessManager: QuickAccessManagerProtocol,
                 profileService: ProfilesServiceProtocol,
-                cacheService: AccountCacheServiceProtocol) {
+                cacheService: AccountCacheServiceProtocol,
+                container: Container) {
         self.authService = authService
         self.accountService = accountService
         self.remoteStorageService = remoteStorage
         self.quickAccessManager = quickAccessManager
         self.profileService = profileService
         self.cacheService = cacheService
-        self.context = context
-        switch context {
-        case .afterAuthorization(let accountID, let account):
-            self.accountID = accountID
-            self.account = account
-        case .afterLaunch(let accountID):
-            self.accountID = accountID
-            self.account = cacheService.storedAccount(with: accountID)
-        }
+        self.accountID = accountID
+        self.container = container
     }
 }
 
 extension AccountManager: AccountManagerProtocol {
     
-    public func launch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
-        switch context {
-        case .afterAuthorization(let accountID, let account):
-            afterAuthorization(account: account, completion: completion)
-            self.context = .afterLaunch(accountID: accountID)
-        case .afterLaunch(let accountID):
-            if let account = cacheService.storedAccount(with: accountID) {
-                self.account = account
-                completion(.success(()))
-                getAccount { _ in }
-            } else {
-                getAccount(completion: completion)
+    public func processAccountAfterSuccessAuthorization(account: AccountModelProtocol,
+                                                        completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
+        saveAccount(account: account,
+                    completion: completion)
+    }
+    
+    public func processAccountAfterLaunch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
+        guard let account = cacheService.storedAccount(with: accountID) else {
+            getAccount { [weak self] result in
+                guard let self = self else { return }
+                switch result {
+                case .success(let account):
+                    self.saveAccount(account: account, completion: completion)
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+            return
+        }
+        self.account = account
+        self.registerAccount(at: container)
+        completion(.success(()))
+        getAccount { [weak self] result in
+            switch result {
+            case .success(let account):
+                self?.updateCurrentAccount(with: account)
+            case .failure(let error):
+                completion(.failure(error))
             }
         }
     }
     
-    public func getAccount(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
+    public func getAccount(completion: @escaping (Result<AccountModelProtocol, AccountManagerError.Profile>) -> ()) {
         profileService.getProfileInfo(userID: accountID) { [weak self] result in
             guard let self = self else { return }
             switch result {
@@ -108,7 +119,7 @@ extension AccountManager: AccountManagerProtocol {
                         let profile = ProfileModel(profile: user)
                         let account = AccountModel(profile: profile,
                                                    blockedIDs: Set(ids))
-                        self.afterAuthorization(account: account, completion: completion)
+                        completion(.success(account))
                     case .failure(let error):
                         completion(.failure(.another(error: error)))
                     }
@@ -212,10 +223,10 @@ extension AccountManager: AccountManagerProtocol {
                   let currentAccount = self.account else { return }
             switch result {
             case .success:
-                self.accountService.setOnline(accountID: self.accountID)
                 self.account?.profile.removed = false
                 self.quickAccessManager.profileRemoved = false
                 self.cacheService.store(accountModel: currentAccount)
+                self.accountService.setOnline(accountID: self.accountID)
                 completion(.success(()))
             case .failure:
                 completion(.failure(.cantRecover))
@@ -280,10 +291,12 @@ extension AccountManager: AccountManagerProtocol {
 }
 
 private extension AccountManager {
-    func afterAuthorization(account: AccountModelProtocol,
-                            completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
-        self.account = account
+
+    func saveAccount(account: AccountModelProtocol,
+                     completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         self.cacheService.store(accountModel: account)
+        self.account = account
+        self.registerAccount(at: container)
         guard !account.profile.removed else {
             self.quickAccessManager.profileRemoved = true
             completion(.failure(.profileRemoved))
@@ -291,5 +304,18 @@ private extension AccountManager {
         }
         self.accountService.setOnline(accountID: self.accountID)
         completion(.success(()))
+    }
+    
+    func updateCurrentAccount(with account: AccountModelProtocol) {
+        self.account?.blockedIds = account.blockedIds
+        self.account?.profile = account.profile
+        self.cacheService.store(accountModel: account)
+    }
+    
+    private func registerAccount(at container: Container) {
+        guard let account = self.account else { return }
+        container.register(AccountModelProtocol.self) { _ in
+            account
+        }.inObjectScope(.weak)
     }
 }

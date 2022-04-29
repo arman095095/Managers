@@ -10,7 +10,7 @@ import Swinject
 import NetworkServices
 
 public enum AccountManagerAssembly {
-    public static func assemble(container: Container, context: AccountManagerContext) {
+    public static func assemble(container: Container) {
         CoreDataServiceAssembly.assemble(container: container)
         AccountCacheServiceAssembly.assemble(container: container)
         container.register(AccountManagerProtocol.self) { r in
@@ -19,15 +19,17 @@ public enum AccountManagerAssembly {
                   let remoteStorage = r.resolve(RemoteStorageServiceProtocol.self),
                   let quickAccessManager = r.resolve(QuickAccessManagerProtocol.self),
                   let profileService = r.resolve(ProfilesServiceProtocol.self),
-                  let cacheService = r.resolve(AccountCacheServiceProtocol.self) else { fatalError(ErrorMessage.dependency.localizedDescription)
+                  let cacheService = r.resolve(AccountCacheServiceProtocol.self),
+                  let accountID = quickAccessManager.userID else { fatalError(ErrorMessage.dependency.localizedDescription)
             }
-            return AccountManager(context: context,
+            return AccountManager(accountID: accountID,
                                   authService: authService,
                                   accountService: accountService,
                                   remoteStorage: remoteStorage,
                                   quickAccessManager: quickAccessManager,
                                   profileService: profileService,
-                                  cacheService: cacheService)
+                                  cacheService: cacheService,
+                                  container: container)
         }.inObjectScope(.weak)
     }
 }

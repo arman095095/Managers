@@ -20,7 +20,6 @@ public protocol AuthManagerProtocol: ProfileInfoManagerProtocol {
 public final class AuthManager {
     
     private var accountID: String?
-
     private let authService: AuthServiceProtocol
     private let accountService: AccountServiceProtocol
     private let remoteStorageService: RemoteStorageServiceProtocol
