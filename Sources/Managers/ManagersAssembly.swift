@@ -17,5 +17,6 @@ public final class ManagersAssembly: Assembly {
         AuthManagerAssembly().assemble(container: container)
         AccountManagerAssembly().assemble(container: container)
         ProfilesManagerAssembly().assemble(container: container)
+        PostsManagerAssembly().assemble(container: container)
     }
 }

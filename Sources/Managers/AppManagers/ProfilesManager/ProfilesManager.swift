@@ -56,9 +56,9 @@ public final class ProfilesManager: ProfilesManagerProtocol {
                             break
                         }
                     }
-                    group.notify(queue: .main) {
-                        completion(.success(profiles))
-                    }
+                }
+                group.notify(queue: .main) {
+                    completion(.success(profiles))
                 }
             case .failure(let error):
                 completion(.failure(error))

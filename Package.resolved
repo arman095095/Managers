@@ -68,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/gtm-session-fetcher.git",
       "state" : {
-        "revision" : "eca9404a18f53727e4698211aaf2615eb93b962a",
-        "version" : "1.7.1"
+        "revision" : "4e9bbf2808b8fee444e84a48f5f3c12641987d3e",
+        "version" : "1.7.2"
       }
     },
     {
@@ -88,15 +88,6 @@
       "state" : {
         "revision" : "7ee9ef9f627d85cbe1b8c4f49a3ed26eed216c77",
         "version" : "2.30908.0"
-      }
-    },
-    {
-      "identity" : "networkservices",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/arman095095/NetworkServices.git",
-      "state" : {
-        "branch" : "develop",
-        "revision" : "ff40042f29d8e6c36a99c01fbf673fe47060e6e9"
       }
     },
     {
