@@ -99,9 +99,24 @@ extension PostsManager: PostsManagerProtocol {
     public func getAllFirstPosts(completion: @escaping (Result<[PostModelProtocol], Error>) -> Void) {
         postsService.getAllFirstPosts(count: Limits.posts.rawValue) { [weak self] result in
             guard let self = self else { return }
+            let group = DispatchGroup()
             switch result {
             case .success(let models):
-                self.handle(models: models, completion: completion)
+                models.forEach { model in
+                    group.enter()
+                    self.postsService.getPostLikersIDs(postID: model.id) { result in
+                        defer { group.leave() }
+                        switch result {
+                        case .success(let likers):
+                            model.likersIds = likers
+                        case .failure:
+                            break
+                        }
+                    }
+                }
+                group.notify(queue: .main) {
+                    self.handle(models: models, completion: completion)
+                }
             case .failure(let error):
                 completion(.failure(error))
             }
@@ -111,9 +126,24 @@ extension PostsManager: PostsManagerProtocol {
     public func getAllNextPosts(completion: @escaping (Result<[PostModelProtocol], Error>) -> Void) {
         postsService.getAllNextPosts(count: Limits.posts.rawValue) { [weak self] result in
             guard let self = self else { return }
+            let group = DispatchGroup()
             switch result {
             case .success(let models):
-                self.handle(models: models, completion: completion)
+                models.forEach { model in
+                    group.enter()
+                    self.postsService.getPostLikersIDs(postID: model.id) { result in
+                        defer { group.leave() }
+                        switch result {
+                        case .success(let likers):
+                            model.likersIds = likers
+                        case .failure:
+                            break
+                        }
+                    }
+                }
+                group.notify(queue: .main) {
+                    self.handle(models: models, completion: completion)
+                }
             case .failure(let error):
                 completion(.failure(error))
             }
@@ -131,10 +161,25 @@ extension PostsManager: PostsManagerProtocol {
                 }
                 self.postsService.getUserFirstPosts(count: Limits.posts.rawValue,
                                                     userID: userID) { result in
+                    let group = DispatchGroup()
                     switch result {
                     case .success(let models):
-                        let posts = models.map { PostModel(model: $0, owner: profile) }
-                        completion(.success(posts))
+                        models.forEach { model in
+                            group.enter()
+                            self.postsService.getPostLikersIDs(postID: model.id) { result in
+                                defer { group.leave() }
+                                switch result {
+                                case .success(let likers):
+                                    model.likersIds = likers
+                                case .failure:
+                                    break
+                                }
+                            }
+                        }
+                        group.notify(queue: .main) {
+                            let posts = models.map { PostModel(model: $0, owner: profile) }
+                            completion(.success(posts))
+                        }
                     case .failure(let error):
                         completion(.failure(error))
                     }
@@ -156,10 +201,25 @@ extension PostsManager: PostsManagerProtocol {
                 }
                 self.postsService.getUserNextPosts(count: Limits.posts.rawValue,
                                                    userID: userID) { result in
+                    let group = DispatchGroup()
                     switch result {
                     case .success(let models):
-                        let posts = models.map { PostModel(model: $0, owner: profile) }
-                        completion(.success(posts))
+                        models.forEach { model in
+                            group.enter()
+                            self.postsService.getPostLikersIDs(postID: model.id) { result in
+                                defer { group.leave() }
+                                switch result {
+                                case .success(let likers):
+                                    model.likersIds = likers
+                                case .failure:
+                                    break
+                                }
+                            }
+                        }
+                        group.notify(queue: .main) {
+                            let posts = models.map { PostModel(model: $0, owner: profile) }
+                            completion(.success(posts))
+                        }
                     case .failure(let error):
                         completion(.failure(error))
                     }
