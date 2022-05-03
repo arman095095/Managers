@@ -195,32 +195,31 @@ extension PostsManager: PostsManagerProtocol {
 private extension PostsManager {
     func handle(models: [PostNetworkModelProtocol],
                 completion: @escaping (Result<[PostModelProtocol], Error>) -> Void) {
-        let group = DispatchGroup()
         var posts = [PostModelProtocol]()
-        var dict = [String: [PostNetworkModelProtocol]]()
+        var dict = [String: ProfileNetworkModelProtocol]()
         let ownersIDs = Set(models.map { $0.userID })
+        let group = DispatchGroup()
         for userID in ownersIDs {
             group.enter()
-            dict[userID] = models.filter { $0.userID == userID }
-            self.profilesService.getProfileInfo(userID: userID) { [weak self] result in
-                guard let self = self else { return }
+            self.profilesService.getProfileInfo(userID: userID) { result in
                 defer { group.leave() }
                 switch result {
                 case .success(let profile):
-                    guard let models = dict[userID] else { return }
-                    posts = models.compactMap {
-                        guard !profile.removed else { return nil }
-                        let post = PostModel(model: $0, owner: profile)
-                        post.ownerMe = post.userID == self.accountID
-                        post.likedByMe = post.likersIds.contains(self.accountID)
-                        return post
-                    }
-                case .failure(let error):
-                    completion(.failure(error))
+                    dict[userID] = profile
+                case .failure:
+                    break
                 }
             }
         }
-        group.notify(queue: .main) {
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self else { return }
+            posts = models.compactMap {
+                guard let owner = dict[$0.userID], !owner.removed else { return nil }
+                let post = PostModel(model: $0, owner: owner)
+                post.ownerMe = self.accountID == $0.userID
+                post.likedByMe = post.likersIds.contains(self.accountID)
+                return post
+            }
             completion(.success(posts))
         }
     }
