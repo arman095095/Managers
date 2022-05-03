@@ -16,6 +16,10 @@ public protocol ProfilesManagerProtocol: AnyObject {
 
 public final class ProfilesManager: ProfilesManagerProtocol {
     
+    public enum Limits: Int {
+        case users = 15
+    }
+    
     private let profileService: ProfilesServiceProtocol
     
     public init(profileService: ProfilesServiceProtocol) {
@@ -35,7 +39,7 @@ public final class ProfilesManager: ProfilesManagerProtocol {
     }
     
     public func getFirstProfiles(accountID: String, completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
-        profileService.getFirstProfilesIDs { [weak self] result in
+        profileService.getFirstProfilesIDs(count: Limits.users.rawValue) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success(let ids):
@@ -67,7 +71,7 @@ public final class ProfilesManager: ProfilesManagerProtocol {
     }
     
     public func getNextProfiles(accountID: String, completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
-        profileService.getNextProfilesIDs { [weak self] result in
+        profileService.getNextProfilesIDs(count: Limits.users.rawValue) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success(let ids):

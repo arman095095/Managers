@@ -18,7 +18,8 @@ public protocol PostModelProtocol: AnyObject {
     var imageHeight: CGFloat? { get }
     var imageWidth: CGFloat? { get }
     var owner: ProfileModelProtocol { get }
-    func liked(by id: String) -> Bool
+    var likedByMe: Bool { get }
+    var ownerMe: Bool { get }
 }
 
 public final class PostModel: PostModelProtocol {
@@ -31,6 +32,8 @@ public final class PostModel: PostModelProtocol {
     public var textContent: String
     public var urlImage: String?
     public var owner: ProfileModelProtocol
+    public var likedByMe: Bool
+    public var ownerMe: Bool
     
     init(model: PostNetworkModelProtocol,
          owner: ProfileNetworkModelProtocol) {
@@ -44,9 +47,7 @@ public final class PostModel: PostModelProtocol {
         self.likersIds = model.likersIds
         self.textContent = model.textContent
         self.owner = ProfileModel(profile: owner)
-    }
-    
-    public func liked(by id: String) -> Bool {
-        return likersIds.contains(id)
+        self.likedByMe = false
+        self.ownerMe = false
     }
 }

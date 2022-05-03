@@ -22,9 +22,9 @@ public protocol PostsManagerProtocol: AnyObject {
                       completion: @escaping (Result<[PostModelProtocol], Error>) -> Void)
     func getCurrentUserFirstPosts(completion: @escaping (Result<[PostModelProtocol], Error>) -> Void)
     func getCurrentUserNextPosts(completion: @escaping (Result<[PostModelProtocol], Error>) -> Void)
-    func removePost(post: PostModelProtocol)
-    func like(post: PostModelProtocol)
-    func unlike(post: PostModelProtocol)
+    func removePost(postID: String)
+    func like(postID: String, ownerID: String)
+    func unlike(postID: String, ownerID: String)
 }
 
 public final class PostsManager {
@@ -46,6 +46,11 @@ public final class PostsManager {
 }
 
 extension PostsManager: PostsManagerProtocol {
+    
+    public enum Limits: Int {
+        case posts = 20
+    }
+    
     public func create(image: UIImage?,
                        imageSize: CGSize?,
                        content: String,
@@ -92,7 +97,7 @@ extension PostsManager: PostsManagerProtocol {
     }
     
     public func getAllFirstPosts(completion: @escaping (Result<[PostModelProtocol], Error>) -> Void) {
-        postsService.getAllFirstPosts { [weak self] result in
+        postsService.getAllFirstPosts(count: Limits.posts.rawValue) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success(let models):
@@ -104,7 +109,7 @@ extension PostsManager: PostsManagerProtocol {
     }
     
     public func getAllNextPosts(completion: @escaping (Result<[PostModelProtocol], Error>) -> Void) {
-        postsService.getAllNextPosts { [weak self] result in
+        postsService.getAllNextPosts(count: Limits.posts.rawValue) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success(let models):
@@ -124,7 +129,8 @@ extension PostsManager: PostsManagerProtocol {
                     completion(.success([]))
                     return
                 }
-                self.postsService.getUserFirstPosts(userID: userID) { result in
+                self.postsService.getUserFirstPosts(count: Limits.posts.rawValue,
+                                                    userID: userID) { result in
                     switch result {
                     case .success(let models):
                         let posts = models.map { PostModel(model: $0, owner: profile) }
@@ -148,7 +154,8 @@ extension PostsManager: PostsManagerProtocol {
                     completion(.success([]))
                     return
                 }
-                self.postsService.getUserNextPosts(userID: userID) { result in
+                self.postsService.getUserNextPosts(count: Limits.posts.rawValue,
+                                                   userID: userID) { result in
                     switch result {
                     case .success(let models):
                         let posts = models.map { PostModel(model: $0, owner: profile) }
@@ -171,26 +178,16 @@ extension PostsManager: PostsManagerProtocol {
         getNextPosts(for: accountID, completion: completion)
     }
     
-    public func removePost(post: PostModelProtocol) {
-        postsService.deletePost(accountID: accountID, postID: post.id)
+    public func removePost(postID: String) {
+        postsService.deletePost(accountID: accountID, postID: postID)
     }
     
-    public func like(post: PostModelProtocol) {
-        let model = PostNetworkModel(userID: post.userID,
-                                     textContent: post.textContent,
-                                     urlImage: post.urlImage,
-                                     imageHeight: post.imageHeight,
-                                     imageWidth: post.imageWidth)
-        postsService.likePost(accountID: accountID, post: model)
+    public func like(postID: String, ownerID: String) {
+        postsService.likePost(accountID: accountID, postID: postID, ownerID: ownerID)
     }
     
-    public func unlike(post: PostModelProtocol) {
-        let model = PostNetworkModel(userID: post.userID,
-                                     textContent: post.textContent,
-                                     urlImage: post.urlImage,
-                                     imageHeight: post.imageHeight,
-                                     imageWidth: post.imageWidth)
-        postsService.unlikePost(accountID: accountID, post: model)
+    public func unlike(postID: String, ownerID: String) {
+        postsService.unlikePost(accountID: accountID, postID: postID, ownerID: ownerID)
     }
     
 }
@@ -205,14 +202,18 @@ private extension PostsManager {
         for userID in ownersIDs {
             group.enter()
             dict[userID] = models.filter { $0.userID == userID }
-            self.profilesService.getProfileInfo(userID: userID) { result in
+            self.profilesService.getProfileInfo(userID: userID) { [weak self] result in
+                guard let self = self else { return }
                 defer { group.leave() }
                 switch result {
                 case .success(let profile):
                     guard let models = dict[userID] else { return }
                     posts = models.compactMap {
                         guard !profile.removed else { return nil }
-                        return PostModel(model: $0, owner: profile)
+                        let post = PostModel(model: $0, owner: profile)
+                        post.ownerMe = post.userID == self.accountID
+                        post.likedByMe = post.likersIds.contains(self.accountID)
+                        return post
                     }
                 case .failure(let error):
                     completion(.failure(error))
