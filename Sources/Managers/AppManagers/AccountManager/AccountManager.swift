@@ -8,6 +8,7 @@
 import NetworkServices
 import Foundation
 import Swinject
+import UIKit
 
 public enum ProfileInfoManagersName: String {
     case auth
@@ -76,6 +77,7 @@ public final class AccountManager {
         self.cacheService = cacheService
         self.accountID = accountID
         self.container = container
+        initObservers()
     }
 }
 
@@ -286,11 +288,11 @@ extension AccountManager: AccountManagerProtocol {
         }
     }
     
-    public func setOnline() {
+    @objc public func setOnline() {
         accountService.setOnline(accountID: accountID)
     }
     
-    public func setOffline() {
+    @objc public func setOffline() {
         accountService.setOffline(accountID: accountID)
     }
 }
@@ -317,10 +319,16 @@ private extension AccountManager {
         self.cacheService.store(accountModel: account)
     }
     
-    private func registerAccount(at container: Container) {
+    func registerAccount(at container: Container) {
         guard let account = self.account else { return }
         container.register(AccountModelProtocol.self) { _ in
             account
         }.inObjectScope(.weak)
+    }
+    
+    func initObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(setOnline), name: UIScene.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(setOffline), name: UIScene.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(setOffline), name: UIScene.didDisconnectNotification, object: nil)
     }
 }
