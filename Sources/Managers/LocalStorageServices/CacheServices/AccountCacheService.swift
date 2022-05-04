@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreData
+import ModelInterfaces
 
 public protocol AccountCacheServiceProtocol {
     func store(accountModel: AccountModelProtocol)

@@ -6,11 +6,7 @@
 //
 
 import Foundation
-
-public protocol AccountModelProtocol: AnyObject {
-    var profile: ProfileModelProtocol { get set }
-    var blockedIds: Set<String> { get set }
-}
+import ModelInterfaces
 
 public final class AccountModel: AccountModelProtocol {
     public var blockedIds: Set<String>

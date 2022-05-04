@@ -7,20 +7,7 @@
 
 import UIKit
 import NetworkServices
-
-public protocol PostModelProtocol: AnyObject {
-    var userID: String { get }
-    var likersIds: [String] { get }
-    var date: Date { get }
-    var id: String { get }
-    var textContent: String { get }
-    var urlImage: String? { get }
-    var imageHeight: CGFloat? { get }
-    var imageWidth: CGFloat? { get }
-    var owner: ProfileModelProtocol { get }
-    var likedByMe: Bool { get }
-    var ownerMe: Bool { get }
-}
+import ModelInterfaces
 
 public final class PostModel: PostModelProtocol {
     public var imageHeight: CGFloat?

@@ -7,6 +7,7 @@
 
 import NetworkServices
 import Foundation
+import ModelInterfaces
 
 public protocol AuthManagerProtocol: ProfileInfoManagerProtocol {
     func register(email: String,

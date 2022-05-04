@@ -9,6 +9,7 @@ import NetworkServices
 import Foundation
 import Swinject
 import UIKit
+import ModelInterfaces
 
 public enum ProfileInfoManagersName: String {
     case auth

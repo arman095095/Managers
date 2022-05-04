@@ -8,6 +8,7 @@
 import Foundation
 import NetworkServices
 import UIKit
+import ModelInterfaces
 
 public protocol PostsManagerProtocol: AnyObject {
     func create(image: UIImage?,

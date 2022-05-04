@@ -7,6 +7,7 @@
 
 import Foundation
 import NetworkServices
+import ModelInterfaces
 
 public protocol ProfilesManagerProtocol: AnyObject {
     func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void)
