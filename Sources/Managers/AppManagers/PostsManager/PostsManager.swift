@@ -177,7 +177,12 @@ extension PostsManager: PostsManagerProtocol {
                             }
                         }
                         group.notify(queue: .main) {
-                            let posts = models.map { PostModel(model: $0, owner: profile) }
+                            let posts: [PostModelProtocol] = models.map {
+                                let model = PostModel(model: $0, owner: profile)
+                                model.likedByMe = model.likersIds.contains(self.accountID)
+                                model.ownerMe = self.accountID == $0.userID
+                                return model
+                            }
                             completion(.success(posts))
                         }
                     case .failure(let error):
@@ -217,7 +222,12 @@ extension PostsManager: PostsManagerProtocol {
                             }
                         }
                         group.notify(queue: .main) {
-                            let posts = models.map { PostModel(model: $0, owner: profile) }
+                            let posts: [PostModelProtocol] = models.map {
+                                let model = PostModel(model: $0, owner: profile)
+                                model.likedByMe = model.likersIds.contains(self.accountID)
+                                model.ownerMe = self.accountID == $0.userID
+                                return model
+                            }
                             completion(.success(posts))
                         }
                     case .failure(let error):
