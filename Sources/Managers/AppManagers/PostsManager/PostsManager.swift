@@ -274,7 +274,7 @@ private extension PostsManager {
         group.notify(queue: .main) { [weak self] in
             guard let self = self else { return }
             posts = models.compactMap {
-                guard let owner = dict[$0.userID], !owner.removed else { return nil }
+                guard let owner = dict[$0.userID] else { return nil }
                 let post = PostModel(model: $0, owner: owner)
                 post.ownerMe = self.accountID == $0.userID
                 post.likedByMe = post.likersIds.contains(self.accountID)
