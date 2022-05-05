@@ -5,10 +5,12 @@ import PackageDescription
 
 private let remoteDependencies: [Package.Dependency] = [
     .package(url: "https://github.com/arman095095/NetworkServices.git", branch: "develop"),
+    .package(url: "https://github.com/arman095095/ModelInterfaces.git", branch: "develop")
 ]
 
 private let localDependencies: [Package.Dependency] = [
-    .package(path: "/Users/armancarhcan/Desktop/Workdir/NetworkServices")
+    .package(path: "/Users/armancarhcan/Desktop/Workdir/NetworkServices"),
+    .package(path: "/Users/armancarhcan/Desktop/Workdir/ModelInterfaces")
 ]
 
 let isDev = true
@@ -29,6 +31,7 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "Managers",
-            dependencies: [.product(name: "NetworkServices", package: "NetworkServices")]),
+            dependencies: [.product(name: "NetworkServices", package: "NetworkServices"),
+                           .product(name: "ModelInterfaces", package: "ModelInterfaces")]),
     ]
 )
