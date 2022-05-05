@@ -3,18 +3,10 @@
 
 import PackageDescription
 
-private let remoteDependencies: [Package.Dependency] = [
+private let dependencies: [Package.Dependency] = [
     .package(url: "https://github.com/arman095095/NetworkServices.git", branch: "develop"),
     .package(url: "https://github.com/arman095095/ModelInterfaces.git", branch: "develop")
 ]
-
-private let localDependencies: [Package.Dependency] = [
-    .package(path: "/Users/armancarhcan/Desktop/Workdir/NetworkServices"),
-    .package(path: "/Users/armancarhcan/Desktop/Workdir/ModelInterfaces")
-]
-
-let isDev = true
-private let dependencies = isDev ? localDependencies : remoteDependencies
 
 let package = Package(
     name: "Managers",

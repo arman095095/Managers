@@ -82,12 +82,30 @@
       }
     },
     {
+      "identity" : "modelinterfaces",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/arman095095/ModelInterfaces.git",
+      "state" : {
+        "branch" : "develop",
+        "revision" : "301b392650aa5d8ae032483760eab95ee267d1ff"
+      }
+    },
+    {
       "identity" : "nanopb",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/nanopb.git",
       "state" : {
         "revision" : "7ee9ef9f627d85cbe1b8c4f49a3ed26eed216c77",
         "version" : "2.30908.0"
+      }
+    },
+    {
+      "identity" : "networkservices",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/arman095095/NetworkServices.git",
+      "state" : {
+        "branch" : "develop",
+        "revision" : "27a5fa97d7c7f17f0e96e1e4975bc3c8d603aa41"
       }
     },
     {
