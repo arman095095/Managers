@@ -105,6 +105,21 @@ extension AuthManager: AuthManagerProtocol {
     }
     
     public func login(email: String, password: String, handler: @escaping (Result<AccountModelProtocol, AuthManagerError>) -> Void) {
+        authService.login(email: email, password: password) { [weak self] result in
+            switch result {
+            case .success(let id):
+                self?.accountID = id
+                self?.profileInfo(accountID: id, handler: handler)
+            case .failure(let error):
+                handler(.failure(.another(error: error)))
+            }
+        }
+        
+    }
+}
+
+private extension AuthManager {
+    func profileInfo(accountID: String, handler: @escaping (Result<AccountModelProtocol, AuthManagerError>) -> Void) {
         var profile: ProfileModelProtocol?
         var blockedIDs: [String]?
         var friendIDs: [String]?
@@ -112,18 +127,6 @@ extension AuthManager: AuthManagerProtocol {
         var waitingsIDs: [String]?
         
         let group = DispatchGroup()
-        group.enter()
-        authService.login(email: email, password: password) { [weak self] result in
-            defer { group.leave() }
-            switch result {
-            case .success(let id):
-                self?.accountID = id
-            case .failure(let error):
-                handler(.failure(.another(error: error)))
-            }
-        }
-        group.wait()
-        guard let accountID = accountID else { return }
         group.enter()
         profileService.getProfileInfo(userID: accountID) { result in
             defer { group.leave() }
@@ -189,4 +192,3 @@ extension AuthManager: AuthManagerProtocol {
         }
     }
 }
-
