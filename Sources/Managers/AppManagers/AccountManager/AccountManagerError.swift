@@ -12,20 +12,6 @@ public enum AccountManagerError: LocalizedError {
     case another(error: Error)
     case profile(value: Profile)
     case remove(value: Remove)
-    case blocking(value: Block)
-    
-    public enum Block: LocalizedError {
-        case cantBlock
-        case cantUnblock
-        public var errorDescription: String? {
-            switch self {
-            case .cantBlock:
-                return "Не удалось заблокировать пользователя"
-            case .cantUnblock:
-                return "Не удалось разблокировать пользователя"
-            }
-        }
-    }
     
     public enum Remove: LocalizedError {
         case cantRemove

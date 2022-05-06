@@ -31,15 +31,8 @@ public protocol AccountManagerProtocol: ProfileInfoManagerProtocol {
     func processAccountAfterSuccessAuthorization(account: AccountModelProtocol,
                                                  completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
     func processAccountAfterLaunch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
-    func isProfileBlocked(userID: String) -> Bool
-    func getAccount(completion: @escaping (Result<AccountModelProtocol, AccountManagerError.Profile>) -> ())
     func recoverAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void)
     func removeAccount(completion: @escaping (Result<Void, AccountManagerError.Remove>) -> Void)
-    func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
-    func blockProfile(_ id: String,
-                      completion: @escaping (Result<Void, AccountManagerError.Block>) -> Void)
-    func unblockProfile(_ id: String,
-                        completion: @escaping (Result<Void, AccountManagerError.Block>) -> Void)
     func setOffline()
     func setOnline()
     func signOut()
@@ -115,149 +108,6 @@ extension AccountManager: AccountManagerProtocol {
                 self?.updateCurrentAccount(with: account)
             case .failure(let error):
                 completion(.failure(error))
-            }
-        }
-    }
-    
-    public func getAccount(completion: @escaping (Result<AccountModelProtocol, AccountManagerError.Profile>) -> ()) {
-        var profile: ProfileModelProtocol?
-        var blockedIDs: [String]?
-        var friendIDs: [String]?
-        var requestIDs: [String]?
-        var waitingsIDs: [String]?
-        
-        let group = DispatchGroup()
-        group.enter()
-        profileService.getProfileInfo(userID: accountID) { result in
-            defer { group.leave() }
-            switch result {
-            case .success(let model):
-                profile = ProfileModel(profile: model)
-            case .failure:
-                break
-            }
-        }
-        group.enter()
-        accountService.getBlockedIds(accountID: accountID) { result in
-            defer { group.leave() }
-            switch result {
-            case .success(let ids):
-                blockedIDs = ids
-            case .failure:
-                break
-            }
-        }
-        group.enter()
-        requestsService.waitingIDs(userID: accountID) { result in
-            defer { group.leave() }
-            switch result {
-            case .success(let ids):
-                waitingsIDs = ids
-            case .failure:
-                break
-            }
-        }
-        group.enter()
-        requestsService.requestIDs(userID: accountID) { result in
-            defer { group.leave() }
-            switch result {
-            case .success(let ids):
-                requestIDs = ids
-            case .failure:
-                break
-            }
-        }
-        group.enter()
-        requestsService.friendIDs(userID: accountID) { result in
-            defer { group.leave() }
-            switch result {
-            case .success(let ids):
-                friendIDs = ids
-            case .failure:
-                break
-            }
-        }
-        group.notify(queue: .main) {
-            guard let profile = profile,
-            let blockedIDs = blockedIDs,
-            let waitingsIDs = waitingsIDs,
-            let requestIDs = requestIDs,
-            let friendIDs = friendIDs else {
-                completion(.failure(.emptyProfile))
-                return
-            }
-            let account = AccountModel(profile: profile, blockedIDs: Set(blockedIDs), friendIds: Set(friendIDs), waitingsIds: Set(waitingsIDs), requestIds: Set(requestIDs))
-            completion(.success(account))
-        }
-    }
-    
-    public func isProfileBlocked(userID: String) -> Bool {
-        guard let currentAccount = account else { return false }
-        return currentAccount.blockedIds.contains(userID)
-    }
-    
-    public func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
-        accountService.getBlockedIds(accountID: accountID) { [weak self] result in
-            guard let self = self,
-                  let currentAccount = self.account else { return }
-            switch result {
-            case .success(let ids):
-                currentAccount.blockedIds = Set(ids)
-                self.cacheService.store(accountModel: currentAccount)
-                let group = DispatchGroup()
-                var profiles = [ProfileModelProtocol]()
-                ids.forEach {
-                    group.enter()
-                    self.profileService.getProfileInfo(userID: $0) { result in
-                        defer { group.leave() }
-                        switch result {
-                        case .success(let profile):
-                            profiles.append(ProfileModel(profile: profile))
-                        case .failure:
-                            break
-                        }
-                    }
-                }
-                group.notify(queue: .main) {
-                    completion(.success(profiles))
-                }
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-    }
-    
-    public func blockProfile(_ id: String,
-                             completion: @escaping (Result<Void, AccountManagerError.Block>) -> Void) {
-        accountService.blockUser(accountID: accountID,
-                                 userID: id) { [weak self] result in
-            guard let self = self,
-                  let currentAccount = self.account else { return }
-            switch result {
-            case .success:
-                currentAccount.blockedIds.insert(id)
-                self.cacheService.store(accountModel: currentAccount)
-                completion(.success(()))
-            case .failure:
-                completion(.failure(.cantBlock))
-            }
-        }
-    }
-    
-    public func unblockProfile(_ id: String,
-                               completion: @escaping (Result<Void, AccountManagerError.Block>) -> Void) {
-        accountService.unblockUser(accountID: accountID,
-                                   userID: id) { [weak self] result in
-            guard let self = self,
-                  let currentAccount = self.account else { return }
-            switch result {
-            case .success:
-                guard let firstIndex = currentAccount.blockedIds.firstIndex(of: id) else { return }
-                currentAccount.blockedIds.remove(at: firstIndex)
-                self.cacheService.store(accountModel: currentAccount)
-                completion(.success(()))
-            case .failure:
-                completion(.failure(.cantUnblock))
             }
         }
     }
@@ -348,6 +198,78 @@ extension AccountManager: AccountManagerProtocol {
 }
 
 private extension AccountManager {
+    
+    func getAccount(completion: @escaping (Result<AccountModelProtocol, AccountManagerError.Profile>) -> ()) {
+        var profile: ProfileModelProtocol?
+        var blockedIDs: [String]?
+        var friendIDs: [String]?
+        var requestIDs: [String]?
+        var waitingsIDs: [String]?
+        
+        let group = DispatchGroup()
+        group.enter()
+        profileService.getProfileInfo(userID: accountID) { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let model):
+                profile = ProfileModel(profile: model)
+            case .failure:
+                break
+            }
+        }
+        group.enter()
+        accountService.getBlockedIds(accountID: accountID) { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let ids):
+                blockedIDs = ids
+            case .failure:
+                break
+            }
+        }
+        group.enter()
+        requestsService.waitingIDs(userID: accountID) { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let ids):
+                waitingsIDs = ids
+            case .failure:
+                break
+            }
+        }
+        group.enter()
+        requestsService.requestIDs(userID: accountID) { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let ids):
+                requestIDs = ids
+            case .failure:
+                break
+            }
+        }
+        group.enter()
+        requestsService.friendIDs(userID: accountID) { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let ids):
+                friendIDs = ids
+            case .failure:
+                break
+            }
+        }
+        group.notify(queue: .main) {
+            guard let profile = profile,
+            let blockedIDs = blockedIDs,
+            let waitingsIDs = waitingsIDs,
+            let requestIDs = requestIDs,
+            let friendIDs = friendIDs else {
+                completion(.failure(.emptyProfile))
+                return
+            }
+            let account = AccountModel(profile: profile, blockedIDs: Set(blockedIDs), friendIds: Set(friendIDs), waitingsIds: Set(waitingsIDs), requestIds: Set(requestIDs))
+            completion(.success(account))
+        }
+    }
     
     func saveAccount(account: AccountModelProtocol,
                      completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {

@@ -22,5 +22,6 @@ public final class ManagersAssembly: Assembly {
         AccountManagerAssembly().assemble(container: container)
         ProfilesManagerAssembly().assemble(container: container)
         PostsManagerAssembly().assemble(container: container)
+        CommunicationManagerAssembly().assemble(container: container)
     }
 }
