@@ -15,8 +15,8 @@ public final class ProfilesManagerAssembly: Assembly {
     
     public func assemble(container: Container) {
         container.register(ProfilesManagerProtocol.self) { r in
-            guard let profilesService = r.resolve(ProfilesServiceProtocol.self) else { fatalError(ErrorMessage.dependency.localizedDescription) }
-            return ProfilesManager(profileService: profilesService)
+            guard let profilesService = r.resolve(ProfilesServiceProtocol.self), let userID = r.resolve(QuickAccessManagerProtocol.self)?.userID else { fatalError(ErrorMessage.dependency.localizedDescription) }
+            return ProfilesManager(accountID: userID, profileService: profilesService)
         }
     }
 }
