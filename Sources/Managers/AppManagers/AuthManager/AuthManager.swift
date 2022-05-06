@@ -122,7 +122,7 @@ extension AuthManager: AuthManagerProtocol {
                 handler(.failure(.another(error: error)))
             }
         }
-        group.wait()
+        //group.wait()
         guard let accountID = accountID else { return }
         group.enter()
         profileService.getProfileInfo(userID: accountID) { result in
