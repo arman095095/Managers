@@ -20,12 +20,14 @@ public final class AccountManagerAssembly: Assembly {
                   let remoteStorage = r.resolve(RemoteStorageServiceProtocol.self),
                   let quickAccessManager = r.resolve(QuickAccessManagerProtocol.self),
                   let profileService = r.resolve(ProfilesServiceProtocol.self),
+                  let requestService = r.resolve(RequestsServiceProtocol.self),
                   let cacheService = r.resolve(AccountCacheServiceProtocol.self),
                   let accountID = quickAccessManager.userID else { fatalError(ErrorMessage.dependency.localizedDescription)
             }
             return AccountManager(accountID: accountID,
                                   authService: authService,
                                   accountService: accountService,
+                                  requestsService: requestService,
                                   remoteStorage: remoteStorage,
                                   quickAccessManager: quickAccessManager,
                                   profileService: profileService,

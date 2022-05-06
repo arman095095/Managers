@@ -56,6 +56,7 @@ public final class AccountManager {
     private let accountID: String
     private let authService: AuthServiceProtocol
     private let accountService: AccountServiceProtocol
+    private let requestsService: RequestsServiceProtocol
     private let remoteStorageService: RemoteStorageServiceProtocol
     private let profileService: ProfilesServiceProtocol
     private let container: Container
@@ -65,6 +66,7 @@ public final class AccountManager {
     public init(accountID: String,
                 authService: AuthServiceProtocol,
                 accountService: AccountServiceProtocol,
+                requestsService: RequestsServiceProtocol,
                 remoteStorage: RemoteStorageServiceProtocol,
                 quickAccessManager: QuickAccessManagerProtocol,
                 profileService: ProfilesServiceProtocol,
@@ -72,6 +74,7 @@ public final class AccountManager {
                 container: Container) {
         self.authService = authService
         self.accountService = accountService
+        self.requestsService = requestsService
         self.remoteStorageService = remoteStorage
         self.quickAccessManager = quickAccessManager
         self.profileService = profileService
@@ -117,28 +120,74 @@ extension AccountManager: AccountManagerProtocol {
     }
     
     public func getAccount(completion: @escaping (Result<AccountModelProtocol, AccountManagerError.Profile>) -> ()) {
-        profileService.getProfileInfo(userID: accountID) { [weak self] result in
-            guard let self = self else { return }
+        var profile: ProfileModelProtocol?
+        var blockedIDs: [String]?
+        var friendIDs: [String]?
+        var requestIDs: [String]?
+        var waitingsIDs: [String]?
+        
+        let group = DispatchGroup()
+        group.enter()
+        profileService.getProfileInfo(userID: accountID) { result in
+            defer { group.leave() }
             switch result {
-            case .success(let user):
-                self.accountService.getBlockedIds(accountID: self.accountID) { result in
-                    switch result {
-                    case .success(let ids):
-                        let profile = ProfileModel(profile: user)
-                        let account = AccountModel(profile: profile,
-                                                   blockedIDs: Set(ids))
-                        completion(.success(account))
-                    case .failure(let error):
-                        completion(.failure(.another(error: error)))
-                    }
-                }
-            case .failure(let error):
-                guard case .getData = error as? GetUserInfoError else {
-                    completion(.failure(.another(error: error)))
-                    return
-                }
-                completion(.failure(.emptyProfile))
+            case .success(let model):
+                profile = ProfileModel(profile: model)
+            case .failure:
+                break
             }
+        }
+        group.enter()
+        accountService.getBlockedIds(accountID: accountID) { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let ids):
+                blockedIDs = ids
+            case .failure:
+                break
+            }
+        }
+        group.enter()
+        requestsService.waitingIDs(userID: accountID) { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let ids):
+                waitingsIDs = ids
+            case .failure:
+                break
+            }
+        }
+        group.enter()
+        requestsService.requestIDs(userID: accountID) { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let ids):
+                requestIDs = ids
+            case .failure:
+                break
+            }
+        }
+        group.enter()
+        requestsService.friendIDs(userID: accountID) { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let ids):
+                friendIDs = ids
+            case .failure:
+                break
+            }
+        }
+        group.notify(queue: .main) {
+            guard let profile = profile,
+            let blockedIDs = blockedIDs,
+            let waitingsIDs = waitingsIDs,
+            let requestIDs = requestIDs,
+            let friendIDs = friendIDs else {
+                completion(.failure(.emptyProfile))
+                return
+            }
+            let account = AccountModel(profile: profile, blockedIDs: Set(blockedIDs), friendIds: Set(friendIDs), waitingsIds: Set(waitingsIDs), requestIds: Set(requestIDs))
+            completion(.success(account))
         }
     }
     
@@ -299,7 +348,7 @@ extension AccountManager: AccountManagerProtocol {
 }
 
 private extension AccountManager {
-
+    
     func saveAccount(account: AccountModelProtocol,
                      completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         self.cacheService.store(accountModel: account)
@@ -316,6 +365,9 @@ private extension AccountManager {
     
     func updateCurrentAccount(with account: AccountModelProtocol) {
         self.account?.blockedIds = account.blockedIds
+        self.account?.friendIds = account.friendIds
+        self.account?.requestIds = account.requestIds
+        self.account?.waitingsIds = account.waitingsIds
         self.account?.profile = account.profile
         self.cacheService.store(accountModel: account)
     }

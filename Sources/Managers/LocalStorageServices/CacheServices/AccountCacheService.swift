@@ -65,6 +65,9 @@ private extension AccountCacheService {
     func fillFields(account: Account,
                     model: AccountModelProtocol) {
         account.blockedIDs = model.blockedIds
+        account.requestIDs = model.requestIds
+        account.waitingsIDs = model.waitingsIds
+        account.friendIDs = model.friendIds
         account.id = model.profile.id
     }
     
