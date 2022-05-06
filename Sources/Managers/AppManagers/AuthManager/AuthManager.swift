@@ -63,9 +63,10 @@ extension AuthManager: AuthManagerProtocol {
                             country: String,
                             city: String,
                             birthday: String,
-                            image: Data,
+                            image: Data?,
                             completion: @escaping (Result<AccountModelProtocol, Error>) -> Void) {
-        guard let accountID = accountID else { return }
+        guard let accountID = accountID,
+              let image = image else { return }
         remoteStorageService.uploadProfile(accountID: accountID, image: image) { [weak self] (result) in
             guard let self = self else { return }
             switch result {

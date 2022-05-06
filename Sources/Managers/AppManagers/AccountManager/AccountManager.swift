@@ -23,7 +23,7 @@ public protocol ProfileInfoManagerProtocol: AnyObject {
                      country: String,
                      city: String,
                      birthday: String,
-                     image: Data,
+                     image: Data?,
                      completion: @escaping (Result<AccountModelProtocol, Error>) -> Void)
 }
 
@@ -248,8 +248,21 @@ extension AccountManager: AccountManagerProtocol {
                             country: String,
                             city: String,
                             birthday: String,
-                            image: Data,
+                            image: Data?,
                             completion: @escaping (Result<AccountModelProtocol, Error>) -> Void) {
+        guard let image = image else {
+            guard let imageURL = account?.profile.imageUrl else { return }
+            let edited = ProfileNetworkModel(userName: username,
+                                             imageName: imageURL,
+                                             identifier: self.accountID,
+                                             sex: sex,
+                                             info: info,
+                                             birthDay: birthday,
+                                             country: country,
+                                             city: city)
+            set(edited: edited, completion: completion)
+            return
+        }
         remoteStorageService.uploadProfile(accountID: accountID, image: image) { [weak self] (result) in
             guard let self = self else { return }
             switch result {
@@ -262,20 +275,7 @@ extension AccountManager: AccountManagerProtocol {
                                                  birthDay: birthday,
                                                  country: country,
                                                  city: city)
-                self.accountService.editAccount(accountID: self.accountID,
-                                                profile: edited) { [weak self] result in
-                    guard let self = self,
-                          let currentAccount = self.account else { return }
-                    switch result {
-                    case .success:
-                        let model = ProfileModel(profile: edited)
-                        self.account?.profile = model
-                        self.cacheService.store(accountModel: currentAccount)
-                        completion(.success((currentAccount)))
-                    case .failure(let error):
-                        completion(.failure(error))
-                    }
-                }
+                self.set(edited: edited, completion: completion)
             case .failure(let error):
                 completion(.failure(error))
             }
@@ -331,5 +331,23 @@ private extension AccountManager {
         NotificationCenter.default.addObserver(self, selector: #selector(setOnline), name: UIScene.willEnterForegroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(setOffline), name: UIScene.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(setOffline), name: UIScene.didDisconnectNotification, object: nil)
+    }
+    
+    func set(edited: ProfileNetworkModelProtocol,
+             completion: @escaping (Result<AccountModelProtocol, Error>) -> Void) {
+        accountService.editAccount(accountID: self.accountID,
+                                   profile: edited) { [weak self] result in
+            guard let self = self,
+                  let currentAccount = self.account else { return }
+            switch result {
+            case .success:
+                let model = ProfileModel(profile: edited)
+                self.account?.profile = model
+                self.cacheService.store(accountModel: currentAccount)
+                completion(.success((currentAccount)))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
     }
 }
