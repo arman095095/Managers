@@ -10,12 +10,21 @@ import ModelInterfaces
 
 public final class AccountModel: AccountModelProtocol {
     public var blockedIds: Set<String>
+    public var friendIds: Set<String>
+    public var requestIds: Set<String>
+    public var waitingsIds: Set<String>
     public var profile: ProfileModelProtocol
 
     public init(profile: ProfileModelProtocol,
-                blockedIDs: Set<String>) {
+                blockedIDs: Set<String>,
+                friendIds: Set<String>,
+                waitingsIds: Set<String>,
+                requestIds: Set<String>) {
         self.profile = profile
         self.blockedIds = blockedIDs
+        self.requestIds = requestIds
+        self.friendIds = friendIds
+        self.waitingsIds = waitingsIds
     }
     
     public init?(account: Account?) {
