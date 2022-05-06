@@ -84,7 +84,11 @@ extension AuthManager: AuthManagerProtocol {
                     switch result {
                     case .success:
                         let profile = ProfileModel(profile: profileModel)
-                        let account = AccountModel(profile: profile, blockedIDs: [])
+                        let account = AccountModel(profile: profile,
+                                                   blockedIDs: [],
+                                                   friendIds: [],
+                                                   waitingsIds: [],
+                                                   requestIds: [])
                         self?.quickAccessManager.userID = accountID
                         completion(.success((account)))
                     case .failure(let error):

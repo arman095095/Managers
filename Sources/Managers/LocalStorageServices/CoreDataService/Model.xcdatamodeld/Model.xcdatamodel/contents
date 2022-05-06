@@ -2,7 +2,10 @@
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="20086" systemVersion="21E258" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Account" representedClassName="Account" syncable="YES" codeGenerationType="class">
         <attribute name="blockedIDs" attributeType="Transformable" customClassName="Set&lt;String&gt;"/>
+        <attribute name="friendIDs" optional="YES" attributeType="Transformable" customClassName="Set&lt;String&gt;"/>
         <attribute name="id" attributeType="String"/>
+        <attribute name="requestIDs" optional="YES" attributeType="Transformable" customClassName="Set&lt;String&gt;"/>
+        <attribute name="waitingsIDs" optional="YES" attributeType="Transformable" customClassName="Set&lt;String&gt;"/>
         <relationship name="profile" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Profile"/>
     </entity>
     <entity name="Profile" representedClassName="Profile" syncable="YES" codeGenerationType="class">
@@ -20,7 +23,7 @@
         <attribute name="userName" attributeType="String"/>
     </entity>
     <elements>
-        <element name="Account" positionX="-63" positionY="-18" width="128" height="74"/>
+        <element name="Account" positionX="-63" positionY="-18" width="128" height="119"/>
         <element name="Profile" positionX="216.6953125" positionY="1.1953125" width="128" height="209"/>
     </elements>
 </model>

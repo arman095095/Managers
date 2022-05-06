@@ -32,6 +32,9 @@ public final class AccountModel: AccountModelProtocol {
               let profile = account.profile,
               let profile = ProfileModel(profile: profile) else { return nil }
         self.blockedIds = account.blockedIDs ?? []
+        self.waitingsIds = account.waitingsIDs ?? []
+        self.requestIds = account.requestIDs ?? []
+        self.friendIds = account.friendIDs ?? []
         self.profile = profile
     }
 }

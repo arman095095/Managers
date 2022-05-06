@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleDataTransport.git",
       "state" : {
-        "revision" : "15ccdfd25ac55b9239b82809531ff26605e7556e",
-        "version" : "9.1.2"
+        "revision" : "4073d04bf28943353b706f461d4ca2a89abb69c1",
+        "version" : "9.1.3"
       }
     },
     {
@@ -87,7 +87,7 @@
       "location" : "https://github.com/arman095095/ModelInterfaces.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "301b392650aa5d8ae032483760eab95ee267d1ff"
+        "revision" : "2812afc016a1afa7ec46356b5bf9b7e22dbb5f30"
       }
     },
     {
@@ -105,7 +105,7 @@
       "location" : "https://github.com/arman095095/NetworkServices.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "27a5fa97d7c7f17f0e96e1e4975bc3c8d603aa41"
+        "revision" : "c7a500ada9493d168a03e1e91eab85de12b41e5a"
       }
     },
     {
