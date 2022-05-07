@@ -182,10 +182,9 @@ extension AccountManager: AccountManagerProtocol {
     }
     
     public func signOut() {
-        authService.signOut { [weak self] _ in
-            self?.setOffline()
-            self?.quickAccessManager.clearAll()
-        }
+        setOffline()
+        quickAccessManager.clearAll()
+        authService.signOut { _ in }
     }
     
     @objc public func setOnline() {
