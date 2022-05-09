@@ -126,7 +126,6 @@ extension AccountManager: AccountManagerProtocol {
             case .success(let profile):
                 self.account?.profile = ProfileModel(profile: profile)
                 self.cacheService.store(accountModel: account)
-                self.quickAccessManager.profileRemoved = profile.removed
                 completion(profile.removed)
             case .failure:
                 completion(false)
@@ -140,7 +139,6 @@ extension AccountManager: AccountManagerProtocol {
                 completion(.failure(.cantRemove))
                 return
             }
-            self?.quickAccessManager.profileRemoved = true
             self?.signOut()
             completion(.success(()))
         }
@@ -153,7 +151,6 @@ extension AccountManager: AccountManagerProtocol {
             switch result {
             case .success:
                 self.account?.profile.removed = false
-                self.quickAccessManager.profileRemoved = false
                 self.cacheService.store(accountModel: currentAccount)
                 self.accountService.setOnline(accountID: self.accountID)
                 completion(.success(()))
@@ -298,7 +295,6 @@ private extension AccountManager {
         self.account = account
         self.registerAccount(at: container)
         guard !account.profile.removed else {
-            self.quickAccessManager.profileRemoved = true
             completion(.failure(.profileRemoved))
             return
         }

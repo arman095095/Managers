@@ -10,7 +10,6 @@ import Foundation
 public enum UserDefaultsItem: String, CaseIterable {
     case userRemembered
     case accounts
-    case profileRemoved
 }
 
 public protocol UserDefaultsServiceProtocol {
