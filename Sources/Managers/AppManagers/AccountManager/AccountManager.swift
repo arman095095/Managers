@@ -126,6 +126,7 @@ extension AccountManager: AccountManagerProtocol {
             case .success(let profile):
                 self.account?.profile = ProfileModel(profile: profile)
                 self.cacheService.store(accountModel: account)
+                self.quickAccessManager.profileRemoved = profile.removed
                 completion(profile.removed)
             case .failure:
                 completion(false)
