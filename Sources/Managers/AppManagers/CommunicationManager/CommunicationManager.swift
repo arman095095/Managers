@@ -24,6 +24,8 @@ public protocol CommunicationManagerProtocol: AnyObject {
                         completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void)
     func getRequests(completion: @escaping (Result<[RequestModelProtocol], Error>) -> ())
     func getChats(completion: @escaping (Result<[ChatModelProtocol], Error>) -> ())
+    func observeFriends(completion: @escaping ([ChatModelProtocol], [String]) -> Void)
+    func observeRequests(completion: @escaping ([RequestModelProtocol], [String]) -> Void)
 }
 
 public final class CommunicationManager {
@@ -33,6 +35,7 @@ public final class CommunicationManager {
     private let cacheService: AccountCacheServiceProtocol
     private let profileService: ProfilesServiceProtocol
     private let requestsService: RequestsServiceProtocol
+    private var socket: SocketProtocol?
     
     init(accountID: String,
          account: AccountModelProtocol,
@@ -47,9 +50,73 @@ public final class CommunicationManager {
         self.profileService = profileService
         self.requestsService = requestsService
     }
+    
+    deinit {
+        socket?.remove()
+    }
 }
 
 extension CommunicationManager: CommunicationManagerProtocol {
+    
+    public func observeFriends(completion: @escaping ([ChatModelProtocol], [String]) -> Void) {
+        socket = requestsService.initFriendsSocket(userID: accountID) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success((let add, let removed)):
+                self.updateCurrentAccountFriends(add: add, removed: removed)
+                var newFriends = [ChatModelProtocol]()
+                let group = DispatchGroup()
+                add.forEach {
+                    group.enter()
+                    self.profileService.getProfileInfo(userID: $0) { result in
+                        defer { group.leave() }
+                        switch result {
+                        case .success(let profile):
+                            let chat = ChatModel(friend: profile)
+                            newFriends.append(chat)
+                        case .failure:
+                            break
+                        }
+                    }
+                }
+                group.notify(queue: .main) {
+                    completion(newFriends, removed)
+                }
+            case .failure:
+                break
+            }
+        }
+    }
+    
+    public func observeRequests(completion: @escaping ([RequestModelProtocol], [String]) -> Void) {
+        socket = requestsService.initRequestsSocket(userID: accountID) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success((let add, let removed)):
+                self.updateCurrentAccountRequests(add: add, removed: removed)
+                var newRequests = [RequestModelProtocol]()
+                let group = DispatchGroup()
+                add.forEach {
+                    group.enter()
+                    self.profileService.getProfileInfo(userID: $0) { result in
+                        defer { group.leave() }
+                        switch result {
+                        case .success(let profile):
+                            let request = RequestModel(sender: profile)
+                            newRequests.append(request)
+                        case .failure:
+                            break
+                        }
+                    }
+                }
+                group.notify(queue: .main) {
+                    completion(newRequests, removed)
+                }
+            case .failure:
+                break
+            }
+        }
+    }
     
     public func getRequests(completion: @escaping (Result<[RequestModelProtocol], Error>) -> ()) {
         requestsService.waitingIDs(userID: accountID) { [weak self] result in
@@ -216,6 +283,26 @@ extension CommunicationManager: CommunicationManagerProtocol {
             case .failure:
                 completion(.failure(.cantUnblock))
             }
+        }
+    }
+}
+
+private extension CommunicationManager {
+    func updateCurrentAccountFriends(add: [String], removed: [String]) {
+        add.forEach {
+            self.account.friendIds.insert($0)
+        }
+        removed.forEach {
+            self.account.friendIds.remove($0)
+        }
+    }
+    
+    func updateCurrentAccountRequests(add: [String], removed: [String]) {
+        add.forEach {
+            self.account.waitingsIds.insert($0)
+        }
+        removed.forEach {
+            self.account.waitingsIds.remove($0)
         }
     }
 }
