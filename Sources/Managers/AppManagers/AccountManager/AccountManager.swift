@@ -28,6 +28,7 @@ public protocol ProfileInfoManagerProtocol: AnyObject {
 }
 
 public protocol AccountManagerProtocol: ProfileInfoManagerProtocol {
+    func observeAccountChanges(completion: @escaping (Bool) -> ())
     func processAccountAfterSuccessAuthorization(account: AccountModelProtocol,
                                                  completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
     func processAccountAfterLaunch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
@@ -89,11 +90,9 @@ extension AccountManager: AccountManagerProtocol {
                                                         completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         saveAccount(account: account,
                     completion: completion)
-        observeAccountChanges()
     }
     
     public func processAccountAfterLaunch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
-        defer { observeAccountChanges() }
         guard let account = cacheService.storedAccount(with: accountID) else {
             getAccount { [weak self] result in
                 guard let self = self else { return }
@@ -115,6 +114,21 @@ extension AccountManager: AccountManagerProtocol {
                 self?.updateCurrentAccount(with: account)
             case .failure(let error):
                 completion(.failure(error))
+            }
+        }
+    }
+    
+    public func observeAccountChanges(completion: @escaping (Bool) -> ()) {
+        socket = profileService.initProfileSocket(userID: accountID) { [weak self] result in
+            guard let self = self,
+                  let account = self.account else { return }
+            switch result {
+            case .success(let profile):
+                self.account?.profile = ProfileModel(profile: profile)
+                self.cacheService.store(accountModel: account)
+                completion(profile.removed)
+            case .failure:
+                completion(false)
             }
         }
     }
@@ -204,21 +218,6 @@ extension AccountManager: AccountManagerProtocol {
 }
 
 private extension AccountManager {
-    
-    func observeAccountChanges() {
-        socket = profileService.initProfileSocket(userID: accountID) { [weak self] result in
-            guard let self = self,
-                  let account = self.account else { return }
-            switch result {
-            case .success(let profile):
-                self.account?.profile = ProfileModel(profile: profile)
-                print(profile)
-                self.cacheService.store(accountModel: account)
-            case .failure:
-                break
-            }
-        }
-    }
     
     func getAccount(completion: @escaping (Result<AccountModelProtocol, AccountManagerError.Profile>) -> ()) {
         var profile: ProfileModelProtocol?
