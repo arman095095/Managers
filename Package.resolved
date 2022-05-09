@@ -87,7 +87,7 @@
       "location" : "https://github.com/arman095095/ModelInterfaces.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "00dd5115165881365eb98015ec01fbbd21001334"
+        "revision" : "26ce028611a426872822e144f362cc25cafc6c67"
       }
     },
     {
@@ -105,7 +105,7 @@
       "location" : "https://github.com/arman095095/NetworkServices.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "94e7eec27c741a80b544c809adbd7438cfe06372"
+        "revision" : "3bad07ef121a020e17e8811e3e22920a4125c8da"
       }
     },
     {
