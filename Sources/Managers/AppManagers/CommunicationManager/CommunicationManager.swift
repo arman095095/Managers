@@ -52,7 +52,7 @@ public final class CommunicationManager {
 extension CommunicationManager: CommunicationManagerProtocol {
     
     public func getRequests(completion: @escaping (Result<[RequestModelProtocol], Error>) -> ()) {
-        requestsService.requestIDs(userID: accountID) { [weak self] result in
+        requestsService.waitingIDs(userID: accountID) { [weak self] result in
             switch result {
             case .success(let ids):
                 var requests = [RequestModelProtocol]()
