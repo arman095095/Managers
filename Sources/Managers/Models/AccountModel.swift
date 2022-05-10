@@ -7,6 +7,7 @@
 
 import Foundation
 import ModelInterfaces
+import Services
 
 public final class AccountModel: AccountModelProtocol {
     public var blockedIds: Set<String>

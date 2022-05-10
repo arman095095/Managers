@@ -7,6 +7,7 @@
 
 import Foundation
 import Swinject
+import Services
 
 public final class AccountCacheServiceAssembly: Assembly {
 

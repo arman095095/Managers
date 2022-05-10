@@ -8,6 +8,7 @@
 import Foundation
 import CoreData
 import ModelInterfaces
+import Services
 
 public protocol AccountCacheServiceProtocol {
     var storedAccount: AccountModelProtocol? { get }

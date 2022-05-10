@@ -5,7 +5,9 @@ import PackageDescription
 
 private let dependencies: [Package.Dependency] = [
     .package(url: "https://github.com/arman095095/NetworkServices.git", branch: "develop"),
-    .package(url: "https://github.com/arman095095/ModelInterfaces.git", branch: "develop")
+    .package(url: "https://github.com/arman095095/ModelInterfaces.git", branch: "develop"),
+    .package(url: "https://github.com/arman095095/Services.git", branch: "develop")
+    
 ]
 
 let package = Package(
@@ -24,6 +26,7 @@ let package = Package(
         .target(
             name: "Managers",
             dependencies: [.product(name: "NetworkServices", package: "NetworkServices"),
-                           .product(name: "ModelInterfaces", package: "ModelInterfaces")]),
+                           .product(name: "ModelInterfaces", package: "ModelInterfaces"),
+                           .product(name: "Services", package: "Services")]),
     ]
 )

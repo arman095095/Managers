@@ -8,6 +8,7 @@
 import Foundation
 import NetworkServices
 import ModelInterfaces
+import Services
 
 public struct ProfileModel: ProfileModelProtocol {
     public var userName: String

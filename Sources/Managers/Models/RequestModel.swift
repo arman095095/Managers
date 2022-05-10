@@ -8,6 +8,7 @@
 import Foundation
 import ModelInterfaces
 import NetworkServices
+import Services
 
 
 public final class RequestModel: RequestModelProtocol {

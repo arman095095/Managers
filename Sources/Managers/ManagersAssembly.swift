@@ -7,15 +7,14 @@
 
 import Foundation
 import Swinject
+import Services
 
 public final class ManagersAssembly: Assembly {
     
     public init() { }
     
     public func assemble(container: Container) {
-        KeychainServiceAssembly().assemble(container: container)
-        UserDefaultsServiceAssembly().assemble(container: container)
-        CoreDataServiceAssembly().assemble(container: container)
+        ServicesAssembly().assemble(container: container)
         AccountCacheServiceAssembly().assemble(container: container)
         QuickAccessManagerAssembly().assemble(container: container)
         AuthManagerAssembly().assemble(container: container)

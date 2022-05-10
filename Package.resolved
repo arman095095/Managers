@@ -118,6 +118,15 @@
       }
     },
     {
+      "identity" : "services",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/arman095095/Services.git",
+      "state" : {
+        "branch" : "develop",
+        "revision" : "402372c00a2501a328c8e8b0663808229c2a9e29"
+      }
+    },
+    {
       "identity" : "swift-protobuf",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-protobuf.git",

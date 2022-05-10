@@ -1,5 +1,5 @@
 
-import CoreData
+import Services
 
 public protocol QuickAccessManagerProtocol: AnyObject {
     var userID: String? { get set }
