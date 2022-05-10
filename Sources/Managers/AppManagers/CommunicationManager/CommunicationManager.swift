@@ -57,11 +57,27 @@ public final class CommunicationManager {
 }
 
 extension CommunicationManager: CommunicationManagerProtocol {
+    
+    public func isProfileFriend(userID: String) -> Bool {
+        account.friendIds.contains(userID)
+    }
+    
+    public func isProfileWaiting(userID: String) -> Bool {
+        account.waitingsIds.contains(userID)
+    }
+    
+    public func isProfileRequested(userID: String) -> Bool {
+        account.requestIds.contains(userID)
+    }
+    
+    public func isProfileBlocked(userID: String) -> Bool {
+        account.blockedIds.contains(userID)
+    }
 
     public func remove(chat: ChatModelProtocol) {
         self.account.friendIds.remove(chat.friendID)
         self.cacheService.store(accountModel: account)
-        self.requestsService.removeChat(with: chat.friendID, from: accountID)
+        self.requestsService.removeFriend(with: chat.friendID, from: accountID)
     }
 
     public func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void) {
@@ -213,22 +229,6 @@ extension CommunicationManager: CommunicationManagerProtocol {
             }
         }
     }
-
-    public func isProfileFriend(userID: String) -> Bool {
-        account.friendIds.contains(userID)
-    }
-    
-    public func isProfileWaiting(userID: String) -> Bool {
-        account.waitingsIds.contains(userID)
-    }
-    
-    public func isProfileRequested(userID: String) -> Bool {
-        account.requestIds.contains(userID)
-    }
-    
-    public func isProfileBlocked(userID: String) -> Bool {
-        account.blockedIds.contains(userID)
-    }
     
     public func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
         accountService.getBlockedIds(accountID: accountID) { [weak self] result in
@@ -272,7 +272,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                 self.account.waitingsIds.remove(id)
                 self.account.requestIds.remove(id)
                 self.cacheService.store(accountModel: self.account)
-                self.requestsService.removeChat(with: id, from: self.accountID)
+                self.requestsService.removeFriend(with: id, from: self.accountID)
                 self.requestsService.deny(toID: id, fromID: self.accountID)
                 self.requestsService.cancelRequest(toID: id, fromID: self.accountID)
                 completion(.success(()))
@@ -308,6 +308,7 @@ private extension CommunicationManager {
         removed.forEach {
             self.account.friendIds.remove($0)
         }
+        cacheService.store(accountModel: self.account)
     }
     
     func updateCurrentAccountRequests(add: [String], removed: [String]) {
@@ -317,6 +318,7 @@ private extension CommunicationManager {
         removed.forEach {
             self.account.waitingsIds.remove($0)
         }
+        cacheService.store(accountModel: self.account)
     }
 }
 
