@@ -22,8 +22,6 @@ public protocol CommunicationManagerProtocol: AnyObject {
                       completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void)
     func unblockProfile(_ id: String,
                         completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void)
-    func getRequests(completion: @escaping (Result<[RequestModelProtocol], Error>) -> ())
-    func getChats(completion: @escaping (Result<[ChatModelProtocol], Error>) -> ())
     func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ())
     func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void)
     func observeRequests(completion: @escaping ([RequestModelProtocol], [RequestModelProtocol]) -> Void)
@@ -182,62 +180,6 @@ extension CommunicationManager: CommunicationManagerProtocol {
             completion(.success((chats, requests)))
         }
     }
-    
-    public func getRequests(completion: @escaping (Result<[RequestModelProtocol], Error>) -> ()) {
-        requestsService.waitingIDs(userID: accountID) { [weak self] result in
-            switch result {
-            case .success(let ids):
-                var requests = [RequestModelProtocol]()
-                let group = DispatchGroup()
-                ids.forEach {
-                    group.enter()
-                    self?.profileService.getProfileInfo(userID: $0) { result in
-                        defer { group.leave() }
-                        switch result {
-                        case .success(let profile):
-                            let requestModel = RequestModel(sender: profile)
-                            requests.append(requestModel)
-                        case .failure:
-                            break
-                        }
-                    }
-                }
-                group.notify(queue: .main) {
-                    completion(.success(requests))
-                }
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-    }
-    
-    public func getChats(completion: @escaping (Result<[ChatModelProtocol], Error>) -> ()) {
-        requestsService.friendIDs(userID: accountID) { [weak self] result in
-            switch result {
-            case .success(let ids):
-                var chats = [ChatModelProtocol]()
-                let group = DispatchGroup()
-                ids.forEach {
-                    group.enter()
-                    self?.profileService.getProfileInfo(userID: $0) { result in
-                        defer { group.leave() }
-                        switch result {
-                        case .success(let profile):
-                            let chatModel = ChatModel(friend: profile)
-                            chats.append(chatModel)
-                        case .failure:
-                            break
-                        }
-                    }
-                }
-                group.notify(queue: .main) {
-                    completion(.success(chats))
-                }
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-    }
 
     public func denyRequestCommunication(userID: String) {
         requestsService.deny(toID: userID, fromID: accountID)
@@ -326,7 +268,13 @@ extension CommunicationManager: CommunicationManagerProtocol {
             switch result {
             case .success:
                 self.account.blockedIds.insert(id)
+                self.account.friendIds.remove(id)
+                self.account.waitingsIds.remove(id)
+                self.account.requestIds.remove(id)
                 self.cacheService.store(accountModel: self.account)
+                self.requestsService.removeChat(with: id, from: self.accountID)
+                self.requestsService.deny(toID: id, fromID: self.accountID)
+                self.requestsService.cancelRequest(toID: id, fromID: self.accountID)
                 completion(.success(()))
             case .failure:
                 completion(.failure(.cantBlock))
@@ -368,6 +316,64 @@ private extension CommunicationManager {
         }
         removed.forEach {
             self.account.waitingsIds.remove($0)
+        }
+    }
+}
+
+private extension CommunicationManager {
+    func getRequests(completion: @escaping (Result<[RequestModelProtocol], Error>) -> ()) {
+        requestsService.waitingIDs(userID: accountID) { [weak self] result in
+            switch result {
+            case .success(let ids):
+                var requests = [RequestModelProtocol]()
+                let group = DispatchGroup()
+                ids.forEach {
+                    group.enter()
+                    self?.profileService.getProfileInfo(userID: $0) { result in
+                        defer { group.leave() }
+                        switch result {
+                        case .success(let profile):
+                            let requestModel = RequestModel(sender: profile)
+                            requests.append(requestModel)
+                        case .failure:
+                            break
+                        }
+                    }
+                }
+                group.notify(queue: .main) {
+                    completion(.success(requests))
+                }
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    func getChats(completion: @escaping (Result<[ChatModelProtocol], Error>) -> ()) {
+        requestsService.friendIDs(userID: accountID) { [weak self] result in
+            switch result {
+            case .success(let ids):
+                var chats = [ChatModelProtocol]()
+                let group = DispatchGroup()
+                ids.forEach {
+                    group.enter()
+                    self?.profileService.getProfileInfo(userID: $0) { result in
+                        defer { group.leave() }
+                        switch result {
+                        case .success(let profile):
+                            let chatModel = ChatModel(friend: profile)
+                            chats.append(chatModel)
+                        case .failure:
+                            break
+                        }
+                    }
+                }
+                group.notify(queue: .main) {
+                    completion(.success(chats))
+                }
+            case .failure(let error):
+                completion(.failure(error))
+            }
         }
     }
 }
