@@ -17,4 +17,13 @@ public final class ChatModel: ChatModelProtocol {
         self.friend = ProfileModel(profile: friend)
         self.friendID = friend.id
     }
+    
+    public init?(chat: Chat?) {
+        guard let chat = chat,
+              let friendID = chat.friendID,
+              let friend = chat.friend,
+              let profile = ProfileModel(profile: friend) else { return nil }
+        self.friendID = friendID
+        self.friend = profile
+    }
 }

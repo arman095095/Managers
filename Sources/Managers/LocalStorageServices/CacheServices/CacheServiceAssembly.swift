@@ -14,10 +14,11 @@ public final class AccountCacheServiceAssembly: Assembly {
     
     public func assemble(container: Container) {
         container.register(AccountCacheServiceProtocol.self) { r in
-            guard let coreDataService = r.resolve(CoreDataServiceProtocol.self) else {
+            guard let coreDataService = r.resolve(CoreDataServiceProtocol.self),
+                  let accountID = r.resolve(QuickAccessManagerProtocol.self)?.userID else {
                 fatalError(ErrorMessage.dependency.localizedDescription)
             }
-            return AccountCacheService(coreDataService: coreDataService)
+            return CacheService(coreDataService: coreDataService, accountID: accountID)
         }
     }
 }

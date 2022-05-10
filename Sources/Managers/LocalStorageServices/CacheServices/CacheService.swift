@@ -10,23 +10,33 @@ import CoreData
 import ModelInterfaces
 
 public protocol AccountCacheServiceProtocol {
+    var storedAccount: AccountModelProtocol? { get }
     func store(accountModel: AccountModelProtocol)
-    func storedAccount(with id: String) -> AccountModelProtocol?
 }
 
-public final class AccountCacheService {
+public protocol ChatsCacheServiceProtocol {
+    var storedChats: [ChatModelProtocol]? { get }
+}
+
+public protocol RequestsCacheServiceProtocol {
+    var storedRequests: [RequestModelProtocol]? { get }
+}
+
+public final class CacheService {
 
     private let coreDataService: CoreDataServiceProtocol
+    private let accountID: String
     
-    public init(coreDataService: CoreDataServiceProtocol) {
+    public init(coreDataService: CoreDataServiceProtocol,
+                accountID: String) {
         self.coreDataService = coreDataService
+        self.accountID = accountID
     }
 }
 
-extension AccountCacheService: AccountCacheServiceProtocol {
-    
-    public func storedAccount(with id: String) -> AccountModelProtocol? {
-        guard let account = object(with: id) else { return nil }
+extension CacheService: AccountCacheServiceProtocol {
+    public var storedAccount: AccountModelProtocol? {
+        guard let account = object(with: accountID) else { return nil }
         return AccountModel(account: account)
     }
     
@@ -40,7 +50,15 @@ extension AccountCacheService: AccountCacheServiceProtocol {
     }
 }
 
-private extension AccountCacheService {
+extension CacheService: ChatsCacheServiceProtocol {
+    public var storedChats: [ChatModelProtocol]? {
+        guard let storedAccount = object(with: accountID),
+              let storedChats = storedAccount.chats else { return nil }
+        return storedChats.compactMap { ChatModel(chat: $0 as? Chat) }
+    }
+}
+
+private extension CacheService {
     
     func object(with id: String) -> Account? {
         coreDataService.model(Account.self, id: id)
