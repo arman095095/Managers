@@ -16,10 +16,12 @@ public protocol AccountCacheServiceProtocol {
 
 public protocol ChatsCacheServiceProtocol {
     var storedChats: [ChatModelProtocol]? { get }
+    func store(chatModel: ChatModelProtocol)
 }
 
 public protocol RequestsCacheServiceProtocol {
     var storedRequests: [RequestModelProtocol]? { get }
+    func store(requestModel: RequestModelProtocol)
 }
 
 public final class CacheService {
@@ -41,12 +43,11 @@ extension CacheService: AccountCacheServiceProtocol {
     }
     
     public func store(accountModel: AccountModelProtocol) {
-        let accountID = accountModel.profile.id
-        if let account = object(with: accountID) {
-            update(account: account, model: accountModel)
+        guard let account = object(with: accountID) else {
+            create(accountModel: accountModel)
             return
         }
-        create(accountModel: accountModel)
+        update(account: account, model: accountModel)
     }
 }
 
@@ -55,6 +56,34 @@ extension CacheService: ChatsCacheServiceProtocol {
         guard let storedAccount = object(with: accountID),
               let storedChats = storedAccount.chats else { return nil }
         return storedChats.compactMap { ChatModel(chat: $0 as? Chat) }
+    }
+    
+    public func store(chatModel: ChatModelProtocol) {
+        guard let storedAccount = object(with: accountID),
+              let storedChats = storedAccount.chats as? Set<Chat> else { return }
+        guard let chat = storedChats.first (where: { $0.friendID == chatModel.friendID }) else {
+            create(chatModel: chatModel)
+            return
+        }
+        update(chat: chat, model: chatModel)
+    }
+}
+
+extension CacheService: RequestsCacheServiceProtocol {
+    public var storedRequests: [RequestModelProtocol]? {
+        guard let storedAccount = object(with: accountID),
+              let storedRequests = storedAccount.requests else { return nil }
+        return storedRequests.compactMap { RequestModel(request: $0 as? Request) }
+    }
+    
+    public func store(requestModel: RequestModelProtocol) {
+        guard let storedAccount = object(with: accountID),
+              let storedRequests = storedAccount.requests as? Set<Request> else { return }
+        guard let request = storedRequests.first (where: { $0.senderID == requestModel.senderID }) else {
+            create(requestModel: requestModel)
+            return
+        }
+        update(request: request, model: requestModel)
     }
 }
 
@@ -79,16 +108,9 @@ private extension CacheService {
         profile.lastActivity = model.lastActivity
         profile.postsCount = Int16(model.postsCount)
     }
-    
-    func fillFields(account: Account,
-                    model: AccountModelProtocol) {
-        account.blockedIDs = model.blockedIds
-        account.requestIDs = model.requestIds
-        account.waitingsIDs = model.waitingsIds
-        account.friendIDs = model.friendIds
-        account.id = model.profile.id
-    }
-    
+}
+
+private extension CacheService {
     func create(accountModel: AccountModelProtocol) {
         coreDataService.initModel(Account.self) { account in
             fillFields(account: account,
@@ -116,5 +138,48 @@ private extension CacheService {
             fillFields(profile: profile,
                        model: model.profile)
         }
+    }
+    
+    func fillFields(account: Account,
+                    model: AccountModelProtocol) {
+        account.blockedIDs = model.blockedIds
+        account.requestIDs = model.requestIds
+        account.waitingsIDs = model.waitingsIds
+        account.friendIDs = model.friendIds
+        account.id = model.profile.id
+    }
+}
+
+private extension CacheService {
+    func create(chatModel: ChatModelProtocol) {
+        guard let storedAccount = object(with: accountID) else { return }
+        let chat = coreDataService.initModel(Chat.self) { chat in
+            chat.friendID = chatModel.friendID
+            chat.friend = coreDataService.initModel(Profile.self) { profile in
+                fillFields(profile: profile, model: chatModel.friend)
+            }
+        }
+        storedAccount.addToChats(chat)
+    }
+    
+    func update(chat: Chat, model: ChatModelProtocol) {
+        // TO DO
+    }
+}
+
+private extension CacheService {
+    func create(requestModel: RequestModelProtocol) {
+        guard let storedAccount = object(with: accountID) else { return }
+        let request = coreDataService.initModel(Request.self) { request in
+            request.senderID = requestModel.senderID
+            request.sender = coreDataService.initModel(Profile.self) { profile in
+                fillFields(profile: profile, model: requestModel.sender)
+            }
+        }
+        storedAccount.addToRequests(request)
+    }
+    
+    func update(request: Request, model: RequestModelProtocol) {
+        // TO DO
     }
 }

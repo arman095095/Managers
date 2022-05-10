@@ -18,4 +18,13 @@ public final class RequestModel: RequestModelProtocol {
         self.sender = ProfileModel(profile: sender)
         self.senderID = sender.id
     }
+    
+    public init?(request: Request?) {
+        guard let request = request,
+              let senderID = request.senderID,
+              let sender = request.sender,
+              let profile = ProfileModel(profile: sender) else { return nil }
+        self.senderID = senderID
+        self.sender = profile
+    }
 }
