@@ -24,8 +24,10 @@ public protocol CommunicationManagerProtocol: AnyObject {
                         completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void)
     func getRequests(completion: @escaping (Result<[RequestModelProtocol], Error>) -> ())
     func getChats(completion: @escaping (Result<[ChatModelProtocol], Error>) -> ())
-    func observeFriends(completion: @escaping ([ChatModelProtocol], [String]) -> Void)
-    func observeRequests(completion: @escaping ([RequestModelProtocol], [String]) -> Void)
+    func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ())
+    func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void)
+    func observeRequests(completion: @escaping ([RequestModelProtocol], [RequestModelProtocol]) -> Void)
+    func remove(chat: ChatModelProtocol)
 }
 
 public final class CommunicationManager {
@@ -57,8 +59,14 @@ public final class CommunicationManager {
 }
 
 extension CommunicationManager: CommunicationManagerProtocol {
-    
-    public func observeFriends(completion: @escaping ([ChatModelProtocol], [String]) -> Void) {
+
+    public func remove(chat: ChatModelProtocol) {
+        self.account.friendIds.remove(chat.friendID)
+        self.cacheService.store(accountModel: account)
+        self.requestsService.removeChat(with: chat.friendID, from: accountID)
+    }
+
+    public func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void) {
         socket = requestsService.initFriendsSocket(userID: accountID) { [weak self] result in
             guard let self = self else { return }
             switch result {
@@ -79,8 +87,22 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         }
                     }
                 }
+                var removedFriends = [ChatModelProtocol]()
+                removed.forEach {
+                    group.enter()
+                    self.profileService.getProfileInfo(userID: $0) { result in
+                        defer { group.leave() }
+                        switch result {
+                        case .success(let profile):
+                            let chat = ChatModel(friend: profile)
+                            removedFriends.append(chat)
+                        case .failure:
+                            break
+                        }
+                    }
+                }
                 group.notify(queue: .main) {
-                    completion(newFriends, removed)
+                    completion(newFriends, removedFriends)
                 }
             case .failure:
                 break
@@ -88,7 +110,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
         }
     }
     
-    public func observeRequests(completion: @escaping ([RequestModelProtocol], [String]) -> Void) {
+    public func observeRequests(completion: @escaping ([RequestModelProtocol], [RequestModelProtocol]) -> Void) {
         socket = requestsService.initRequestsSocket(userID: accountID) { [weak self] result in
             guard let self = self else { return }
             switch result {
@@ -109,12 +131,55 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         }
                     }
                 }
+                var removedRequests = [RequestModelProtocol]()
+                removed.forEach {
+                    group.enter()
+                    self.profileService.getProfileInfo(userID: $0) { result in
+                        defer { group.leave() }
+                        switch result {
+                        case .success(let profile):
+                            let request = RequestModel(sender: profile)
+                            removedRequests.append(request)
+                        case .failure:
+                            break
+                        }
+                    }
+                }
                 group.notify(queue: .main) {
-                    completion(newRequests, removed)
+                    completion(newRequests, removedRequests)
                 }
             case .failure:
                 break
             }
+        }
+    }
+    
+    public func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ()) {
+        var requests = [RequestModelProtocol]()
+        var chats = [ChatModelProtocol]()
+        let group = DispatchGroup()
+        group.enter()
+        getRequests { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let request):
+                requests = request
+            case .failure:
+                break
+            }
+        }
+        group.enter()
+        getChats { result in
+            defer { group.leave() }
+            switch result {
+            case .success(let chat):
+                chats = chat
+            case .failure:
+                break
+            }
+        }
+        group.notify(queue: .main) {
+            completion(.success((chats, requests)))
         }
     }
     
