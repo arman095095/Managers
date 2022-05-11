@@ -22,7 +22,7 @@ public protocol CommunicationManagerProtocol: AnyObject {
                       completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void)
     func unblockProfile(_ id: String,
                         completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void)
-    func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ())
+    func getChatsAndRequests() -> (chats: [ChatModelProtocol], requests: [RequestModelProtocol])
     func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void)
     func observeRequests(completion: @escaping ([RequestModelProtocol], [RequestModelProtocol]) -> Void)
     func remove(chat: ChatModelProtocol)
@@ -75,12 +75,21 @@ extension CommunicationManager: CommunicationManagerProtocol {
     public func isProfileBlocked(userID: String) -> Bool {
         account.blockedIds.contains(userID)
     }
+    
+    public func getChatsAndRequests() -> (chats: [ChatModelProtocol], requests: [RequestModelProtocol]) {
+        return (cacheService.storedChats, cacheService.storedRequests)
+    }
+
+    public func denyRequestCommunication(userID: String) {
+        requestsService.deny(toID: userID, fromID: accountID) { _ in }
+    }
+    
+    public func acceptRequestCommunication(userID: String, completion: @escaping (Result<Void, Error>) -> ()) {
+        requestsService.accept(toID: userID, fromID: accountID) { _ in }
+    }
 
     public func remove(chat: ChatModelProtocol) {
-        self.account.friendIds.remove(chat.friendID)
-        self.cacheService.store(accountModel: account)
-        self.requestsService.removeFriend(with: chat.friendID, from: accountID)
-        self.cacheService.removeChat(with: chat.friendID)
+        self.requestsService.removeFriend(with: chat.friendID, from: accountID) { _ in }
     }
 
     public func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void) {
@@ -98,6 +107,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         switch result {
                         case .success(let profile):
                             let chat = ChatModel(friend: profile)
+                            guard !self.cacheService.storedChats.contains(where: { $0.friendID == chat.friendID }) else { return }
                             self.cacheService.store(chatModel: chat)
                             newFriends.append(chat)
                         case .failure:
@@ -113,6 +123,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         switch result {
                         case .success(let profile):
                             let chat = ChatModel(friend: profile)
+                            guard self.cacheService.storedChats.contains(where: { $0.friendID == chat.friendID }) else { return }
                             self.cacheService.removeChat(with: chat.friendID)
                             removedFriends.append(chat)
                         case .failure:
@@ -144,6 +155,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         switch result {
                         case .success(let profile):
                             let request = RequestModel(sender: profile)
+                            guard !self.cacheService.storedRequests.contains(where: { $0.senderID == request.senderID }) else { return }
                             self.cacheService.store(requestModel: request)
                             newRequests.append(request)
                         case .failure:
@@ -159,6 +171,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         switch result {
                         case .success(let profile):
                             let request = RequestModel(sender: profile)
+                            guard self.cacheService.storedRequests.contains(where: { $0.senderID == request.senderID }) else { return }
                             self.cacheService.removeRequest(with: request.senderID)
                             removedRequests.append(request)
                         case .failure:
@@ -205,31 +218,6 @@ extension CommunicationManager: CommunicationManagerProtocol {
         }
         group.notify(queue: .main) {
             completion(.success((refreshedChats, refreshedRequests)))
-        }
-    }
-
-    public func denyRequestCommunication(userID: String) {
-        requestsService.deny(toID: userID, fromID: accountID)
-        account.waitingsIds.remove(userID)
-        cacheService.store(accountModel: account)
-        cacheService.removeRequest(with: userID)
-    }
-    
-    public func acceptRequestCommunication(userID: String, completion: @escaping (Result<Void, Error>) -> ()) {
-        requestsService.accept(toID: userID, fromID: accountID) { [weak self] result in
-            guard let self = self else { return }
-            switch result {
-            case .success():
-                self.account.waitingsIds.remove(userID)
-                self.account.friendIds.insert(userID)
-                self.cacheService.store(accountModel: self.account)
-                guard let request = self.cacheService.removeRequest(with: userID) else { return }
-                let chatModel = ChatModel(friend: request.sender)
-                self.cacheService.store(chatModel: chatModel)
-                completion(.success(()))
-            case .failure(let error):
-                completion(.failure(error))
-            }
         }
     }
 
@@ -282,15 +270,50 @@ extension CommunicationManager: CommunicationManagerProtocol {
             guard let self = self else { return }
             switch result {
             case .success:
-                self.account.blockedIds.insert(id)
-                self.account.friendIds.remove(id)
-                self.account.waitingsIds.remove(id)
-                self.account.requestIds.remove(id)
-                self.cacheService.store(accountModel: self.account)
-                self.requestsService.removeFriend(with: id, from: self.accountID)
-                self.requestsService.deny(toID: id, fromID: self.accountID)
-                self.requestsService.cancelRequest(toID: id, fromID: self.accountID)
-                completion(.success(()))
+                var errors = [Error]()
+                let group = DispatchGroup()
+                group.enter()
+                self.requestsService.removeFriend(with: id, from: self.accountID) { result in
+                    defer { group.leave() }
+                    switch result {
+                    case .success():
+                        break
+                    case .failure(let error):
+                        errors.append(error)
+                    }
+                }
+                group.enter()
+                self.requestsService.deny(toID: id, fromID: self.accountID) { result in
+                    defer { group.leave() }
+                    switch result {
+                    case .success():
+                        break
+                    case .failure(let error):
+                        errors.append(error)
+                    }
+                }
+                group.enter()
+                self.requestsService.cancelRequest(toID: id, fromID: self.accountID) { result in
+                    defer { group.leave() }
+                    switch result {
+                    case .success():
+                        break
+                    case .failure(let error):
+                        errors.append(error)
+                    }
+                }
+                group.notify(queue: .main) {
+                    guard errors.isEmpty else {
+                        completion(.failure(.cantBlock))
+                        return
+                    }
+                    self.account.blockedIds.insert(id)
+                    self.account.friendIds.remove(id)
+                    self.account.waitingsIds.remove(id)
+                    self.account.requestIds.remove(id)
+                    self.cacheService.store(accountModel: self.account)
+                    completion(.success(()))
+                }
             case .failure:
                 completion(.failure(.cantBlock))
             }
