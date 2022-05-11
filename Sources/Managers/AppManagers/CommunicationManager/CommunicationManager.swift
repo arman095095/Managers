@@ -325,13 +325,16 @@ private extension CommunicationManager {
 private extension CommunicationManager {
     func getRequests(completion: @escaping (Result<[RequestModelProtocol], Error>) -> ()) {
         requestsService.waitingIDs(userID: accountID) { [weak self] result in
+            guard let self = self else { return }
             switch result {
             case .success(let ids):
+                self.account.waitingsIds = Set(ids)
+                self.cacheService.store(accountModel: self.account)
                 var requests = [RequestModelProtocol]()
                 let group = DispatchGroup()
                 ids.forEach {
                     group.enter()
-                    self?.profileService.getProfileInfo(userID: $0) { result in
+                    self.profileService.getProfileInfo(userID: $0) { result in
                         defer { group.leave() }
                         switch result {
                         case .success(let profile):
@@ -353,13 +356,16 @@ private extension CommunicationManager {
     
     func getChats(completion: @escaping (Result<[ChatModelProtocol], Error>) -> ()) {
         requestsService.friendIDs(userID: accountID) { [weak self] result in
+            guard let self = self else { return }
             switch result {
             case .success(let ids):
+                self.account.friendIds = Set(ids)
+                self.cacheService.store(accountModel: self.account)
                 var chats = [ChatModelProtocol]()
                 let group = DispatchGroup()
                 ids.forEach {
                     group.enter()
-                    self?.profileService.getProfileInfo(userID: $0) { result in
+                    self.profileService.getProfileInfo(userID: $0) { result in
                         defer { group.leave() }
                         switch result {
                         case .success(let profile):
