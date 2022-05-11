@@ -304,9 +304,6 @@ extension CommunicationManager: CommunicationManagerProtocol {
     }
     
     public func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ()) {
-        let storedRequests = cacheService.storedRequests
-        let storedChats = cacheService.storedChats
-
         var refreshedChats = [ChatModelProtocol]()
         var refreshedRequests = [RequestModelProtocol]()
         let group = DispatchGroup()
