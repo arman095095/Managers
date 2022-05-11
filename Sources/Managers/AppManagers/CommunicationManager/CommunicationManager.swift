@@ -98,6 +98,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         switch result {
                         case .success(let profile):
                             let chat = ChatModel(friend: profile)
+                            self.cacheService.store(chatModel: chat)
                             newFriends.append(chat)
                         case .failure:
                             break
@@ -112,6 +113,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         switch result {
                         case .success(let profile):
                             let chat = ChatModel(friend: profile)
+                            self.cacheService.removeChat(with: chat.friendID)
                             removedFriends.append(chat)
                         case .failure:
                             break
@@ -142,6 +144,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         switch result {
                         case .success(let profile):
                             let request = RequestModel(sender: profile)
+                            self.cacheService.store(requestModel: request)
                             newRequests.append(request)
                         case .failure:
                             break
@@ -156,6 +159,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                         switch result {
                         case .success(let profile):
                             let request = RequestModel(sender: profile)
+                            self.cacheService.removeRequest(with: request.senderID)
                             removedRequests.append(request)
                         case .failure:
                             break
