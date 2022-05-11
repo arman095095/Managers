@@ -88,8 +88,7 @@ extension AccountManager: AccountManagerProtocol {
     
     public func processAccountAfterSuccessAuthorization(account: AccountModelProtocol,
                                                         completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
-        store(account: account,
-                    completion: completion)
+        handle(account: account, completion: completion)
     }
     
     public func processAccountAfterLaunch(completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
@@ -98,7 +97,7 @@ extension AccountManager: AccountManagerProtocol {
                 guard let self = self else { return }
                 switch result {
                 case .success(let account):
-                    self.store(account: account, completion: completion)
+                    self.handle(account: account, completion: completion)
                 case .failure(let error):
                     completion(.failure(error))
                 }
@@ -289,8 +288,8 @@ private extension AccountManager {
         }
     }
     
-    func store(account: AccountModelProtocol,
-                     completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
+    func handle(account: AccountModelProtocol,
+                completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ()) {
         self.cacheService.store(accountModel: account)
         self.account = account
         self.registerAccount(at: container)
