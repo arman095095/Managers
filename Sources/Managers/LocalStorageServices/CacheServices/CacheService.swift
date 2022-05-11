@@ -16,13 +16,16 @@ public protocol AccountCacheServiceProtocol {
 }
 
 public protocol ChatsCacheServiceProtocol {
-    var storedChats: [ChatModelProtocol]? { get }
+    var storedChats: [ChatModelProtocol] { get }
     func store(chatModel: ChatModelProtocol)
+    func removeChat(with id: String)
 }
 
 public protocol RequestsCacheServiceProtocol {
-    var storedRequests: [RequestModelProtocol]? { get }
+    var storedRequests: [RequestModelProtocol] { get }
     func store(requestModel: RequestModelProtocol)
+    @discardableResult
+    func removeRequest(with id: String) -> RequestModelProtocol?
 }
 
 public final class CacheService {
@@ -53,9 +56,9 @@ extension CacheService: AccountCacheServiceProtocol {
 }
 
 extension CacheService: ChatsCacheServiceProtocol {
-    public var storedChats: [ChatModelProtocol]? {
+    public var storedChats: [ChatModelProtocol] {
         guard let storedAccount = object(with: accountID),
-              let storedChats = storedAccount.chats else { return nil }
+              let storedChats = storedAccount.chats else { return [] }
         return storedChats.compactMap { ChatModel(chat: $0 as? Chat) }
     }
     
@@ -68,12 +71,18 @@ extension CacheService: ChatsCacheServiceProtocol {
         }
         update(chat: chat, model: chatModel)
     }
+    
+    public func removeChat(with id: String) {
+        guard let account = object(with: accountID) else { return }
+        guard let chat = account.chats?.first(where: { ($0 as? Chat)?.friendID == id }) as? Chat else { return }
+        coreDataService.remove(chat)
+    }
 }
 
 extension CacheService: RequestsCacheServiceProtocol {
-    public var storedRequests: [RequestModelProtocol]? {
+    public var storedRequests: [RequestModelProtocol] {
         guard let storedAccount = object(with: accountID),
-              let storedRequests = storedAccount.requests else { return nil }
+              let storedRequests = storedAccount.requests else { return [] }
         return storedRequests.compactMap { RequestModel(request: $0 as? Request) }
     }
     
@@ -85,6 +94,15 @@ extension CacheService: RequestsCacheServiceProtocol {
             return
         }
         update(request: request, model: requestModel)
+    }
+    
+    @discardableResult
+    public func removeRequest(with id: String) -> RequestModelProtocol? {
+        guard let account = object(with: accountID) else { return nil }
+        guard let request = account.requests?.first(where: { ($0 as? Request)?.senderID == id }) as? Request else { return nil }
+        let requestModel = RequestModel(request: request)
+        coreDataService.remove(request)
+        return requestModel
     }
 }
 

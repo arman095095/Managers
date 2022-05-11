@@ -19,6 +19,11 @@ public final class ChatModel: ChatModelProtocol {
         self.friendID = friend.id
     }
     
+    public init(friend: ProfileModelProtocol) {
+        self.friend = friend
+        self.friendID = friend.id
+    }
+    
     public init?(chat: Chat?) {
         guard let chat = chat,
               let friendID = chat.friendID,

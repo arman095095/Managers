@@ -28,11 +28,13 @@ public protocol CommunicationManagerProtocol: AnyObject {
     func remove(chat: ChatModelProtocol)
 }
 
+public typealias CommunicationCacheServiceProtocol = AccountCacheServiceProtocol & RequestsCacheServiceProtocol & ChatsCacheServiceProtocol
+
 public final class CommunicationManager {
     private let account: AccountModelProtocol
     private let accountID: String
     private let accountService: AccountServiceProtocol
-    private let cacheService: AccountCacheServiceProtocol
+    private let cacheService: CommunicationCacheServiceProtocol
     private let profileService: ProfilesServiceProtocol
     private let requestsService: RequestsServiceProtocol
     private var socket: SocketProtocol?
@@ -40,7 +42,7 @@ public final class CommunicationManager {
     init(accountID: String,
          account: AccountModelProtocol,
          accountService: AccountServiceProtocol,
-         cacheService: AccountCacheServiceProtocol,
+         cacheService: CommunicationCacheServiceProtocol,
          profileService: ProfilesServiceProtocol,
          requestsService: RequestsServiceProtocol) {
         self.accountID = accountID
@@ -78,6 +80,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
         self.account.friendIds.remove(chat.friendID)
         self.cacheService.store(accountModel: account)
         self.requestsService.removeFriend(with: chat.friendID, from: accountID)
+        self.cacheService.removeChat(with: chat.friendID)
     }
 
     public func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void) {
@@ -169,15 +172,19 @@ extension CommunicationManager: CommunicationManagerProtocol {
     }
     
     public func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ()) {
-        var requests = [RequestModelProtocol]()
-        var chats = [ChatModelProtocol]()
+        let storedRequests = cacheService.storedRequests
+        let storedChats = cacheService.storedChats
+        completion(.success((storedChats, storedRequests)))
+
+        var refreshedChats = [ChatModelProtocol]()
+        var refreshedRequests = [RequestModelProtocol]()
         let group = DispatchGroup()
         group.enter()
         getRequests { result in
             defer { group.leave() }
             switch result {
-            case .success(let request):
-                requests = request
+            case .success(let requests):
+                refreshedRequests = requests
             case .failure:
                 break
             }
@@ -186,14 +193,14 @@ extension CommunicationManager: CommunicationManagerProtocol {
         getChats { result in
             defer { group.leave() }
             switch result {
-            case .success(let chat):
-                chats = chat
+            case .success(let chats):
+                refreshedChats = chats
             case .failure:
                 break
             }
         }
         group.notify(queue: .main) {
-            completion(.success((chats, requests)))
+            completion(.success((refreshedChats, refreshedRequests)))
         }
     }
 
@@ -201,6 +208,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
         requestsService.deny(toID: userID, fromID: accountID)
         account.waitingsIds.remove(userID)
         cacheService.store(accountModel: account)
+        cacheService.removeRequest(with: userID)
     }
     
     public func acceptRequestCommunication(userID: String, completion: @escaping (Result<Void, Error>) -> ()) {
@@ -211,6 +219,9 @@ extension CommunicationManager: CommunicationManagerProtocol {
                 self.account.waitingsIds.remove(userID)
                 self.account.friendIds.insert(userID)
                 self.cacheService.store(accountModel: self.account)
+                guard let request = self.cacheService.removeRequest(with: userID) else { return }
+                let chatModel = ChatModel(friend: request.sender)
+                self.cacheService.store(chatModel: chatModel)
                 completion(.success(()))
             case .failure(let error):
                 completion(.failure(error))
@@ -339,6 +350,7 @@ private extension CommunicationManager {
                         switch result {
                         case .success(let profile):
                             let requestModel = RequestModel(sender: profile)
+                            self.cacheService.store(requestModel: requestModel)
                             requests.append(requestModel)
                         case .failure:
                             break
@@ -370,6 +382,7 @@ private extension CommunicationManager {
                         switch result {
                         case .success(let profile):
                             let chatModel = ChatModel(friend: profile)
+                            self.cacheService.store(chatModel: chatModel)
                             chats.append(chatModel)
                         case .failure:
                             break

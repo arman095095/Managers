@@ -18,7 +18,7 @@ public final class CommunicationManagerAssembly: Assembly {
                   let requestsService = r.resolve(RequestsServiceProtocol.self),
                   let profileService = r.resolve(ProfilesServiceProtocol.self),
                   let quickAccessManager = r.resolve(QuickAccessManagerProtocol.self),
-                  let cacheService = r.resolve(AccountCacheServiceProtocol.self),
+                  let cacheService = r.resolve(CommunicationCacheServiceProtocol.self),
                   let accountID = quickAccessManager.userID,
                   let account = r.resolve(AccountModelProtocol.self) else { fatalError(ErrorMessage.dependency.localizedDescription)
                 

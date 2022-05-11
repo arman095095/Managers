@@ -20,6 +20,6 @@ public final class AccountCacheServiceAssembly: Assembly {
                 fatalError(ErrorMessage.dependency.localizedDescription)
             }
             return CacheService(coreDataService: coreDataService, accountID: accountID)
-        }
+        }.implements(CommunicationCacheServiceProtocol.self)
     }
 }
