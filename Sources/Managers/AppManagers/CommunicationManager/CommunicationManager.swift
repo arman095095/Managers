@@ -9,19 +9,25 @@ import Foundation
 import ModelInterfaces
 import NetworkServices
 
-public protocol CommunicationManagerProtocol: AnyObject {
-    func isProfileFriend(userID: String) -> Bool
-    func isProfileBlocked(userID: String) -> Bool
-    func isProfileWaiting(userID: String) -> Bool
-    func isProfileRequested(userID: String) -> Bool
-    func requestCommunication(userID: String)
-    func acceptRequestCommunication(userID: String, completion: @escaping (Result<Void, Error>) -> ())
-    func denyRequestCommunication(userID: String)
+public protocol BlockingManagerProtocol: AnyObject {
     func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
     func blockProfile(_ id: String,
                       completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void)
     func unblockProfile(_ id: String,
                         completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void)
+}
+
+public protocol ProfileStateDeterminator: AnyObject {
+    func isProfileFriend(userID: String) -> Bool
+    func isProfileBlocked(userID: String) -> Bool
+    func isProfileWaiting(userID: String) -> Bool
+    func isProfileRequested(userID: String) -> Bool
+}
+
+public protocol CommunicationManagerProtocol: BlockingManagerProtocol, ProfileStateDeterminator {
+    func requestCommunication(userID: String)
+    func acceptRequestCommunication(userID: String, completion: @escaping (Result<Void, Error>) -> ())
+    func denyRequestCommunication(userID: String)
     func getChatsAndRequests() -> (chats: [ChatModelProtocol], requests: [RequestModelProtocol])
     func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void)
     func observeRequests(completion: @escaping ([RequestModelProtocol], [RequestModelProtocol]) -> Void)
@@ -58,8 +64,7 @@ public final class CommunicationManager {
     }
 }
 
-extension CommunicationManager: CommunicationManagerProtocol {
-    
+extension CommunicationManager {
     public func isProfileFriend(userID: String) -> Bool {
         account.friendIds.contains(userID)
     }
@@ -75,6 +80,115 @@ extension CommunicationManager: CommunicationManagerProtocol {
     public func isProfileBlocked(userID: String) -> Bool {
         account.blockedIds.contains(userID)
     }
+}
+
+extension CommunicationManager {
+    public func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
+        accountService.getBlockedIds(accountID: accountID) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success(let ids):
+                self.account.blockedIds = Set(ids)
+                self.cacheService.store(accountModel: self.account)
+                let group = DispatchGroup()
+                var profiles = [ProfileModelProtocol]()
+                ids.forEach {
+                    group.enter()
+                    self.profileService.getProfileInfo(userID: $0) { result in
+                        defer { group.leave() }
+                        switch result {
+                        case .success(let profile):
+                            profiles.append(ProfileModel(profile: profile))
+                        case .failure:
+                            break
+                        }
+                    }
+                }
+                group.notify(queue: .main) {
+                    completion(.success(profiles))
+                }
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    public func blockProfile(_ id: String,
+                             completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void) {
+        accountService.blockUser(accountID: accountID,
+                                 userID: id) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success:
+                var errors = [Error]()
+                let group = DispatchGroup()
+                group.enter()
+                self.requestsService.removeFriend(with: id, from: self.accountID) { result in
+                    defer { group.leave() }
+                    switch result {
+                    case .success():
+                        break
+                    case .failure(let error):
+                        errors.append(error)
+                    }
+                }
+                group.enter()
+                self.requestsService.deny(toID: id, fromID: self.accountID) { result in
+                    defer { group.leave() }
+                    switch result {
+                    case .success():
+                        break
+                    case .failure(let error):
+                        errors.append(error)
+                    }
+                }
+                group.enter()
+                self.requestsService.cancelRequest(toID: id, fromID: self.accountID) { result in
+                    defer { group.leave() }
+                    switch result {
+                    case .success():
+                        break
+                    case .failure(let error):
+                        errors.append(error)
+                    }
+                }
+                group.notify(queue: .main) {
+                    guard errors.isEmpty else {
+                        completion(.failure(.cantBlock))
+                        return
+                    }
+                    self.account.blockedIds.insert(id)
+                    self.account.friendIds.remove(id)
+                    self.account.waitingsIds.remove(id)
+                    self.account.requestIds.remove(id)
+                    self.cacheService.store(accountModel: self.account)
+                    completion(.success(()))
+                }
+            case .failure:
+                completion(.failure(.cantBlock))
+            }
+        }
+    }
+    
+    public func unblockProfile(_ id: String,
+                               completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void) {
+        accountService.unblockUser(accountID: accountID,
+                                   userID: id) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success:
+                guard let firstIndex = self.account.blockedIds.firstIndex(of: id) else { return }
+                self.account.blockedIds.remove(at: firstIndex)
+                self.cacheService.store(accountModel: self.account)
+                completion(.success(()))
+            case .failure:
+                completion(.failure(.cantUnblock))
+            }
+        }
+    }
+}
+
+extension CommunicationManager: CommunicationManagerProtocol {
     
     public func getChatsAndRequests() -> (chats: [ChatModelProtocol], requests: [RequestModelProtocol]) {
         return (cacheService.storedChats, cacheService.storedRequests)
@@ -232,110 +346,6 @@ extension CommunicationManager: CommunicationManagerProtocol {
             }
         }
     }
-    
-    public func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
-        accountService.getBlockedIds(accountID: accountID) { [weak self] result in
-            guard let self = self else { return }
-            switch result {
-            case .success(let ids):
-                self.account.blockedIds = Set(ids)
-                self.cacheService.store(accountModel: self.account)
-                let group = DispatchGroup()
-                var profiles = [ProfileModelProtocol]()
-                ids.forEach {
-                    group.enter()
-                    self.profileService.getProfileInfo(userID: $0) { result in
-                        defer { group.leave() }
-                        switch result {
-                        case .success(let profile):
-                            profiles.append(ProfileModel(profile: profile))
-                        case .failure:
-                            break
-                        }
-                    }
-                }
-                group.notify(queue: .main) {
-                    completion(.success(profiles))
-                }
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-    }
-    
-    public func blockProfile(_ id: String,
-                             completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void) {
-        accountService.blockUser(accountID: accountID,
-                                 userID: id) { [weak self] result in
-            guard let self = self else { return }
-            switch result {
-            case .success:
-                var errors = [Error]()
-                let group = DispatchGroup()
-                group.enter()
-                self.requestsService.removeFriend(with: id, from: self.accountID) { result in
-                    defer { group.leave() }
-                    switch result {
-                    case .success():
-                        break
-                    case .failure(let error):
-                        errors.append(error)
-                    }
-                }
-                group.enter()
-                self.requestsService.deny(toID: id, fromID: self.accountID) { result in
-                    defer { group.leave() }
-                    switch result {
-                    case .success():
-                        break
-                    case .failure(let error):
-                        errors.append(error)
-                    }
-                }
-                group.enter()
-                self.requestsService.cancelRequest(toID: id, fromID: self.accountID) { result in
-                    defer { group.leave() }
-                    switch result {
-                    case .success():
-                        break
-                    case .failure(let error):
-                        errors.append(error)
-                    }
-                }
-                group.notify(queue: .main) {
-                    guard errors.isEmpty else {
-                        completion(.failure(.cantBlock))
-                        return
-                    }
-                    self.account.blockedIds.insert(id)
-                    self.account.friendIds.remove(id)
-                    self.account.waitingsIds.remove(id)
-                    self.account.requestIds.remove(id)
-                    self.cacheService.store(accountModel: self.account)
-                    completion(.success(()))
-                }
-            case .failure:
-                completion(.failure(.cantBlock))
-            }
-        }
-    }
-    
-    public func unblockProfile(_ id: String,
-                               completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void) {
-        accountService.unblockUser(accountID: accountID,
-                                   userID: id) { [weak self] result in
-            guard let self = self else { return }
-            switch result {
-            case .success:
-                guard let firstIndex = self.account.blockedIds.firstIndex(of: id) else { return }
-                self.account.blockedIds.remove(at: firstIndex)
-                self.cacheService.store(accountModel: self.account)
-                completion(.success(()))
-            case .failure:
-                completion(.failure(.cantUnblock))
-            }
-        }
-    }
 }
 
 private extension CommunicationManager {
@@ -425,3 +435,4 @@ private extension CommunicationManager {
         }
     }
 }
+
