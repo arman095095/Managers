@@ -19,6 +19,8 @@ public protocol ChatsCacheServiceProtocol {
     var storedChats: [ChatModelProtocol] { get }
     func store(chatModel: ChatModelProtocol)
     func removeChat(with id: String)
+    func chat(with id: String) -> ChatModelProtocol?
+    func update(profileModel: ProfileModelProtocol, chatID: String)
 }
 
 public protocol RequestsCacheServiceProtocol {
@@ -26,6 +28,8 @@ public protocol RequestsCacheServiceProtocol {
     func store(requestModel: RequestModelProtocol)
     @discardableResult
     func removeRequest(with id: String) -> RequestModelProtocol?
+    func request(with id: String) -> RequestModelProtocol?
+    func update(profileModel: ProfileModelProtocol, requestID: String)
 }
 
 public final class CacheService {
@@ -72,6 +76,21 @@ extension CacheService: ChatsCacheServiceProtocol {
         update(chat: chat, model: chatModel)
     }
     
+    public func chat(with id: String) -> ChatModelProtocol? {
+        guard let account = object(with: accountID) else { return nil }
+        guard let chat = account.chats?.first(where: { ($0 as? Chat)?.friendID == id }) as? Chat else { return nil }
+        return ChatModel(chat: chat)
+    }
+    
+    public func update(profileModel: ProfileModelProtocol, chatID: String) {
+        guard let account = object(with: accountID) else { return }
+        guard let chat = account.chats?.first(where: { ($0 as? Chat)?.friendID == chatID }) as? Chat,
+              let friend = chat.friend else { return }
+        coreDataService.update(friend) { profile in
+            fillFields(profile: profile, model: profileModel)
+        }
+    }
+    
     public func removeChat(with id: String) {
         guard let account = object(with: accountID) else { return }
         guard let chat = account.chats?.first(where: { ($0 as? Chat)?.friendID == id }) as? Chat else { return }
@@ -103,6 +122,21 @@ extension CacheService: RequestsCacheServiceProtocol {
         let requestModel = RequestModel(request: request)
         coreDataService.remove(request)
         return requestModel
+    }
+    
+    public func request(with id: String) -> RequestModelProtocol? {
+        guard let account = object(with: accountID) else { return nil }
+        guard let request = account.requests?.first(where: { ($0 as? Request)?.senderID == id }) as? Request else { return nil }
+        return RequestModel(request: request)
+    }
+    
+    public func update(profileModel: ProfileModelProtocol, requestID: String) {
+        guard let account = object(with: accountID) else { return }
+        guard let request = account.requests?.first(where: { ($0 as? Request)?.senderID == requestID }) as? Request,
+              let sender = request.sender else { return }
+        coreDataService.update(sender) { profile in
+            fillFields(profile: profile, model: profileModel)
+        }
     }
 }
 
@@ -170,6 +204,7 @@ private extension CacheService {
 }
 
 private extension CacheService {
+    
     func create(chatModel: ChatModelProtocol) {
         guard let storedAccount = object(with: accountID) else { return }
         let chat = coreDataService.initModel(Chat.self) { chat in

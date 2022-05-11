@@ -32,10 +32,13 @@ public protocol CommunicationManagerProtocol: BlockingManagerProtocol, ProfileSt
     func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ())
     func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void)
     func observeRequests(completion: @escaping ([RequestModelProtocol], [RequestModelProtocol]) -> Void)
+    func observeFriendsAndRequestsProfiles(completion: @escaping () -> ())
     func remove(chat: ChatModelProtocol)
 }
 
-public typealias CommunicationCacheServiceProtocol = AccountCacheServiceProtocol & RequestsCacheServiceProtocol & ChatsCacheServiceProtocol
+public typealias ChatsAndRequestsCacheServiceProtocol = ChatsCacheServiceProtocol & RequestsCacheServiceProtocol
+
+public typealias CommunicationCacheServiceProtocol = AccountCacheServiceProtocol & ChatsAndRequestsCacheServiceProtocol
 
 public final class CommunicationManager {
     private let account: AccountModelProtocol
@@ -44,7 +47,7 @@ public final class CommunicationManager {
     private let cacheService: CommunicationCacheServiceProtocol
     private let profileService: ProfilesServiceProtocol
     private let requestsService: RequestsServiceProtocol
-    private var socket: SocketProtocol?
+    private var sockets = [SocketProtocol]()
     
     init(accountID: String,
          account: AccountModelProtocol,
@@ -61,7 +64,7 @@ public final class CommunicationManager {
     }
     
     deinit {
-        socket?.remove()
+        sockets.forEach { $0.remove() }
     }
 }
 
@@ -206,9 +209,40 @@ extension CommunicationManager: CommunicationManagerProtocol {
     public func remove(chat: ChatModelProtocol) {
         self.requestsService.removeFriend(with: chat.friendID, from: accountID) { _ in }
     }
+    
+    public func observeFriendsAndRequestsProfiles(completion: @escaping () -> ()) {
+        
+        account.friendIds.forEach {
+            let socket = profileService.initProfileSocket(userID: $0) { result in
+                switch result {
+                case .success(let profile):
+                    self.cacheService.update(profileModel: ProfileModel(profile: profile),
+                                             chatID: profile.id)
+                    completion()
+                case .failure:
+                    break
+                }
+            }
+            sockets.append(socket)
+        }
+
+        account.waitingsIds.forEach {
+            let socket = profileService.initProfileSocket(userID: $0) { result in
+                switch result {
+                case .success(let profile):
+                    self.cacheService.update(profileModel: ProfileModel(profile: profile),
+                                             requestID: profile.id)
+                    completion()
+                case .failure:
+                    break
+                }
+            }
+            sockets.append(socket)
+        }
+    }
 
     public func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void) {
-        socket = requestsService.initFriendsSocket(userID: accountID) { [weak self] result in
+        let socket = requestsService.initFriendsSocket(userID: accountID) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success((let add, let removed)):
@@ -224,7 +258,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                             let chat = ChatModel(friend: profile)
                             guard !self.cacheService.storedChats.contains(where: { $0.friendID == chat.friendID }) else { return }
                             self.cacheService.store(chatModel: chat)
-                            newFriends.append(chat)
+                            newFriends.insert(chat, at: 0)
                         case .failure:
                             break
                         }
@@ -253,10 +287,11 @@ extension CommunicationManager: CommunicationManagerProtocol {
                 break
             }
         }
+        self.sockets.append(socket)
     }
     
     public func observeRequests(completion: @escaping ([RequestModelProtocol], [RequestModelProtocol]) -> Void) {
-        socket = requestsService.initRequestsSocket(userID: accountID) { [weak self] result in
+        let socket = requestsService.initRequestsSocket(userID: accountID) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success((let add, let removed)):
@@ -272,7 +307,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                             let request = RequestModel(sender: profile)
                             guard !self.cacheService.storedRequests.contains(where: { $0.senderID == request.senderID }) else { return }
                             self.cacheService.store(requestModel: request)
-                            newRequests.append(request)
+                            newRequests.insert(request, at: 0)
                         case .failure:
                             break
                         }
@@ -301,6 +336,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
                 break
             }
         }
+        sockets.append(socket)
     }
     
     public func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ()) {
@@ -385,7 +421,7 @@ private extension CommunicationManager {
                         case .success(let profile):
                             let requestModel = RequestModel(sender: profile)
                             self.cacheService.store(requestModel: requestModel)
-                            requests.append(requestModel)
+                            requests.insert(requestModel, at: 0)
                         case .failure:
                             break
                         }
@@ -431,7 +467,7 @@ private extension CommunicationManager {
                         case .success(let profile):
                             let chatModel = ChatModel(friend: profile)
                             self.cacheService.store(chatModel: chatModel)
-                            chats.append(chatModel)
+                            chats.insert(chatModel, at: 0)
                         case .failure:
                             break
                         }
