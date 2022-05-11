@@ -164,7 +164,15 @@ private extension CacheService {
     }
     
     func update(chat: Chat, model: ChatModelProtocol) {
-        // TO DO
+        guard let friend = chat.friend else {
+            coreDataService.initModel(Profile.self) { profile in
+                fillFields(profile: profile, model: model.friend)
+            }
+            return
+        }
+        coreDataService.update(chat) { chat in
+            fillFields(profile: friend, model: model.friend)
+        }
     }
 }
 
@@ -181,6 +189,14 @@ private extension CacheService {
     }
     
     func update(request: Request, model: RequestModelProtocol) {
-        // TO DO
+        guard let sender = request.sender else {
+            coreDataService.initModel(Profile.self) { profile in
+                fillFields(profile: profile, model: model.sender)
+            }
+            return
+        }
+        coreDataService.update(request) { request in
+            fillFields(profile: sender, model: model.sender)
+        }
     }
 }
