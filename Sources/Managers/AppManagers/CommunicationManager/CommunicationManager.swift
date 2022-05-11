@@ -17,14 +17,14 @@ public protocol BlockingManagerProtocol: AnyObject {
                         completion: @escaping (Result<Void, CommunicationManagerError.Block>) -> Void)
 }
 
-public protocol ProfileStateDeterminator: AnyObject {
+public protocol ProfileStateDeterminateSerivce: AnyObject {
     func isProfileFriend(userID: String) -> Bool
     func isProfileBlocked(userID: String) -> Bool
     func isProfileWaiting(userID: String) -> Bool
     func isProfileRequested(userID: String) -> Bool
 }
 
-public protocol CommunicationManagerProtocol: BlockingManagerProtocol, ProfileStateDeterminator {
+public protocol CommunicationManagerProtocol: BlockingManagerProtocol, ProfileStateDeterminateSerivce {
     func requestCommunication(userID: String)
     func acceptRequestCommunication(userID: String, completion: @escaping (Result<Void, Error>) -> ())
     func denyRequestCommunication(userID: String)
@@ -306,7 +306,6 @@ extension CommunicationManager: CommunicationManagerProtocol {
     public func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ()) {
         let storedRequests = cacheService.storedRequests
         let storedChats = cacheService.storedChats
-        completion(.success((storedChats, storedRequests)))
 
         var refreshedChats = [ChatModelProtocol]()
         var refreshedRequests = [RequestModelProtocol]()
@@ -452,7 +451,6 @@ private extension CommunicationManager {
                         return false
                     }
                     for element in stored {
-                        print("чел \(element.friend.userName)")
                         if !contains(element: element, array: chats) {
                             self.cacheService.removeChat(with: element.friendID)
                         }
