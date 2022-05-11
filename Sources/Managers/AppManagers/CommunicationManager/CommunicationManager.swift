@@ -29,6 +29,7 @@ public protocol CommunicationManagerProtocol: BlockingManagerProtocol, ProfileSt
     func acceptRequestCommunication(userID: String, completion: @escaping (Result<Void, Error>) -> ())
     func denyRequestCommunication(userID: String)
     func getChatsAndRequests() -> (chats: [ChatModelProtocol], requests: [RequestModelProtocol])
+    func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ())
     func observeFriends(completion: @escaping ([ChatModelProtocol], [ChatModelProtocol]) -> Void)
     func observeRequests(completion: @escaping ([RequestModelProtocol], [RequestModelProtocol]) -> Void)
     func remove(chat: ChatModelProtocol)
@@ -395,6 +396,20 @@ private extension CommunicationManager {
                     }
                 }
                 group.notify(queue: .main) {
+                    let stored = self.cacheService.storedRequests
+                    func contains(element: RequestModelProtocol, array: [RequestModelProtocol]) -> Bool {
+                        for item in array {
+                            if element.senderID == item.senderID {
+                                return true
+                            }
+                        }
+                        return false
+                    }
+                    for element in stored {
+                        if !contains(element: element, array: requests) {
+                            self.cacheService.removeRequest(with: element.senderID)
+                        }
+                    }
                     completion(.success(requests))
                 }
             case .failure(let error):
@@ -427,6 +442,21 @@ private extension CommunicationManager {
                     }
                 }
                 group.notify(queue: .main) {
+                    let stored = self.cacheService.storedChats
+                    func contains(element: ChatModelProtocol, array: [ChatModelProtocol]) -> Bool {
+                        for item in array {
+                            if element.friendID == item.friendID {
+                                return true
+                            }
+                        }
+                        return false
+                    }
+                    for element in stored {
+                        print("чел \(element.friend.userName)")
+                        if !contains(element: element, array: chats) {
+                            self.cacheService.removeChat(with: element.friendID)
+                        }
+                    }
                     completion(.success(chats))
                 }
             case .failure(let error):
