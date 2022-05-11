@@ -179,6 +179,7 @@ private extension CacheService {
             }
         }
         storedAccount.addToChats(chat)
+        coreDataService.saveContext()
     }
     
     func update(chat: Chat, model: ChatModelProtocol) {
@@ -204,6 +205,7 @@ private extension CacheService {
             }
         }
         storedAccount.addToRequests(request)
+        coreDataService.saveContext()
     }
     
     func update(request: Request, model: RequestModelProtocol) {
