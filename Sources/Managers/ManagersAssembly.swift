@@ -20,3 +20,7 @@ public final class ManagersAssembly: Assembly {
         CommunicationManagerAssembly().assemble(container: container)
     }
 }
+
+enum ErrorMessage: LocalizedError {
+    case dependency
+}
