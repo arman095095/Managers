@@ -9,11 +9,9 @@ import Foundation
 import Swinject
 import Services
 
-public final class QuickAccessManagerAssembly: Assembly {
+final class QuickAccessManagerAssembly: Assembly {
 
-    public init() { }
-    
-    public func assemble(container: Container) {
+    func assemble(container: Container) {
         container.register(QuickAccessManagerProtocol.self) { r in
             guard let userDefaultsService = r.resolve(UserDefaultsServiceProtocol.self),
                   let keychainService = r.resolve(KeychainServiceProtocol.self) else { fatalError() }

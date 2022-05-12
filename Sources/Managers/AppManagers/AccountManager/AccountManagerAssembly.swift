@@ -11,11 +11,9 @@ import NetworkServices
 import Services
 import Managers
 
-public final class AccountManagerAssembly: Assembly {
+final class AccountManagerAssembly: Assembly {
     
-    public init() { }
-    
-    public func assemble(container: Container) {
+    func assemble(container: Container) {
         container.register(AccountManagerProtocol.self) { r in
             guard let authService = r.resolve(AuthServiceProtocol.self),
                   let accountService = r.resolve(AccountServiceProtocol.self),

@@ -6,12 +6,12 @@ public protocol QuickAccessManagerProtocol: AnyObject {
     func clearAll()
 }
 
-final public class QuickAccessManager {
+final class QuickAccessManager {
     private let keychainService: KeychainServiceProtocol
     private let userDefaultsService: UserDefaultsServiceProtocol
     
-    public init(keychainService: KeychainServiceProtocol,
-                userDefaultsService: UserDefaultsServiceProtocol) {
+    init(keychainService: KeychainServiceProtocol,
+         userDefaultsService: UserDefaultsServiceProtocol) {
         self.keychainService = keychainService
         self.userDefaultsService = userDefaultsService
     }
@@ -44,7 +44,7 @@ extension QuickAccessManager: QuickAccessManagerProtocol {
 }
 
 private extension QuickAccessManager {
-
+    
     var userRemembered: Bool {
         get {
             userDefaultsService.getData(item: .userRemembered) as? Bool ?? false

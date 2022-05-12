@@ -11,7 +11,6 @@ import NetworkServices
 import ModelInterfaces
 
 public enum BlockingManagerError: LocalizedError {
-    
     case cantBlock
     case cantUnblock
     
@@ -33,7 +32,7 @@ public protocol BlockingManagerProtocol: AnyObject {
                         completion: @escaping (Result<Void, BlockingManagerError>) -> Void)
 }
 
-public final class BlockingManager {
+final class BlockingManager {
     
     private let account: AccountModelProtocol
     private let accountID: String
@@ -42,12 +41,12 @@ public final class BlockingManager {
     private let cacheService: AccountCacheServiceProtocol
     private let requestsService: RequestsServiceProtocol
     
-    public init(account: AccountModelProtocol,
-                accountID: String,
-                accountService: AccountServiceProtocol,
-                profileService: ProfilesServiceProtocol,
-                cacheService: AccountCacheServiceProtocol,
-                requestsService: RequestsServiceProtocol) {
+    init(account: AccountModelProtocol,
+         accountID: String,
+         accountService: AccountServiceProtocol,
+         profileService: ProfilesServiceProtocol,
+         cacheService: AccountCacheServiceProtocol,
+         requestsService: RequestsServiceProtocol) {
         self.account = account
         self.accountID = accountID
         self.accountService = accountService

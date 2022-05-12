@@ -30,8 +30,7 @@ public enum AccountManagerContext {
     case afterLaunch(accountID: String)
 }
 
-public final class AccountManager {
-    
+final class AccountManager {
     private var account: AccountModelProtocol?
     private let accountID: String
     private let authService: AuthServiceProtocol
@@ -44,15 +43,15 @@ public final class AccountManager {
     private let cacheService: AccountCacheServiceProtocol
     private var socket: SocketProtocol?
     
-    public init(accountID: String,
-                authService: AuthServiceProtocol,
-                accountService: AccountServiceProtocol,
-                requestsService: RequestsServiceProtocol,
-                remoteStorage: RemoteStorageServiceProtocol,
-                quickAccessManager: QuickAccessManagerProtocol,
-                profileService: ProfilesServiceProtocol,
-                cacheService: AccountCacheServiceProtocol,
-                container: Container) {
+    init(accountID: String,
+         authService: AuthServiceProtocol,
+         accountService: AccountServiceProtocol,
+         requestsService: RequestsServiceProtocol,
+         remoteStorage: RemoteStorageServiceProtocol,
+         quickAccessManager: QuickAccessManagerProtocol,
+         profileService: ProfilesServiceProtocol,
+         cacheService: AccountCacheServiceProtocol,
+         container: Container) {
         self.authService = authService
         self.accountService = accountService
         self.requestsService = requestsService
@@ -222,10 +221,10 @@ private extension AccountManager {
         }
         group.notify(queue: .main) {
             guard let profile = profile,
-            let blockedIDs = blockedIDs,
-            let waitingsIDs = waitingsIDs,
-            let requestIDs = requestIDs,
-            let friendIDs = friendIDs else {
+                  let blockedIDs = blockedIDs,
+                  let waitingsIDs = waitingsIDs,
+                  let requestIDs = requestIDs,
+                  let friendIDs = friendIDs else {
                 completion(.failure(.emptyProfile))
                 return
             }
