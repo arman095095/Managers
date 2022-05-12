@@ -69,6 +69,7 @@ public final class CommunicationManager {
 }
 
 extension CommunicationManager: ChatsAndRequestsManagerProtocol {
+
     public func getChatsAndRequests() -> (chats: [ChatModelProtocol], requests: [RequestModelProtocol]) {
         return (cacheService.storedChats, cacheService.storedRequests)
     }
