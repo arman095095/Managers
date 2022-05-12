@@ -25,7 +25,8 @@ public protocol ProfileStateDeterminateSerivce: AnyObject {
     func isProfileRequested(userID: String) -> Bool
 }
 
-public protocol CommunicationManagerProtocol: BlockingManagerProtocol, ProfileStateDeterminateSerivce {
+public protocol CommunicationManagerProtocol: BlockingManagerProtocol,
+                                              ProfileStateDeterminateSerivce {
     func requestCommunication(userID: String)
     func acceptRequestCommunication(userID: String, completion: @escaping (Result<Void, Error>) -> ())
     func denyRequestCommunication(userID: String)
