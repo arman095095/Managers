@@ -14,7 +14,7 @@ import Services
 public final class CommunicationManagerAssembly: Assembly {
     public init() { }
     public func assemble(container: Container) {
-        container.register(CommunicationManagerProtocol.self) { r in
+        container.register(InitialCommunicationManagerProtocol.self) { r in
             guard let accountService = r.resolve(AccountServiceProtocol.self),
                   let requestsService = r.resolve(RequestsServiceProtocol.self),
                   let profileService = r.resolve(ProfilesServiceProtocol.self),
@@ -30,6 +30,8 @@ public final class CommunicationManagerAssembly: Assembly {
                                         cacheService: cacheService,
                                         profileService: profileService,
                                         requestsService: requestsService)
-        }.inObjectScope(.weak)
+        }.implements(BlockingManagerProtocol.self,
+                     ProfileStateDeterminator.self,
+                     ChatsAndRequestsManagerProtocol.self).inObjectScope(.weak)
     }
 }

@@ -10,13 +10,16 @@ import NetworkServices
 import ModelInterfaces
 import Services
 
-public protocol ProfilesManagerProtocol: AnyObject {
+public protocol ProfileInfoManager {
     func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void)
+}
+
+public protocol UsersManagerProtocol: AnyObject {
     func getFirstProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
     func getNextProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
 }
 
-public final class ProfilesManager: ProfilesManagerProtocol {
+public final class ProfilesManager: UsersManagerProtocol {
     
     public enum Limits: Int {
         case users = 15
@@ -28,18 +31,6 @@ public final class ProfilesManager: ProfilesManagerProtocol {
     public init(accountID: String, profileService: ProfilesServiceProtocol) {
         self.profileService = profileService
         self.accountID = accountID
-    }
-    
-    public func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void) {
-        profileService.getProfileInfo(userID: userID) { result in
-            switch result {
-            case .success(let profile):
-                let profileModel = ProfileModel(profile: profile)
-                completion(.success(profileModel))
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
     }
     
     public func getFirstProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
@@ -101,6 +92,20 @@ public final class ProfilesManager: ProfilesManagerProtocol {
                         completion(.success(profiles))
                     }
                 }
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+}
+
+extension ProfilesManager: ProfileInfoManager {
+    public func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void) {
+        profileService.getProfileInfo(userID: userID) { result in
+            switch result {
+            case .success(let profile):
+                let profileModel = ProfileModel(profile: profile)
+                completion(.success(profileModel))
             case .failure(let error):
                 completion(.failure(error))
             }

@@ -7,19 +7,17 @@
 
 import Foundation
 
-public enum CommunicationManagerError: LocalizedError {
-    case blocking(value: Block)
+public enum BlockingManagerError: LocalizedError {
     
-    public enum Block: LocalizedError {
-        case cantBlock
-        case cantUnblock
-        public var errorDescription: String? {
-            switch self {
-            case .cantBlock:
-                return "Не удалось заблокировать пользователя"
-            case .cantUnblock:
-                return "Не удалось разблокировать пользователя"
-            }
+    case cantBlock
+    case cantUnblock
+    
+    public var errorDescription: String? {
+        switch self {
+        case .cantBlock:
+            return "Не удалось заблокировать пользователя"
+        case .cantUnblock:
+            return "Не удалось разблокировать пользователя"
         }
     }
 }

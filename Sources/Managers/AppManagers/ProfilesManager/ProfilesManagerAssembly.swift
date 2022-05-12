@@ -14,9 +14,9 @@ public final class ProfilesManagerAssembly: Assembly {
     public init() { }
     
     public func assemble(container: Container) {
-        container.register(ProfilesManagerProtocol.self) { r in
+        container.register(UsersManagerProtocol.self) { r in
             guard let profilesService = r.resolve(ProfilesServiceProtocol.self), let userID = r.resolve(QuickAccessManagerProtocol.self)?.userID else { fatalError(ErrorMessage.dependency.localizedDescription) }
             return ProfilesManager(accountID: userID, profileService: profilesService)
-        }.inObjectScope(.weak)
+        }.implements(ProfileInfoManagerProtocol.self).inObjectScope(.weak)
     }
 }

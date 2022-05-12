@@ -28,7 +28,7 @@ public protocol ProfileInfoManagerProtocol: AnyObject {
                      completion: @escaping (Result<AccountModelProtocol, Error>) -> Void)
 }
 
-public protocol AccountManagerProtocol: ProfileInfoManagerProtocol {
+public protocol AccountManagerProtocol {
     func observeAccountChanges(completion: @escaping (Bool) -> ())
     func processAccountAfterSuccessAuthorization(account: AccountModelProtocol,
                                                  completion: @escaping (Result<Void, AccountManagerError.Profile>) -> ())
@@ -160,6 +160,22 @@ extension AccountManager: AccountManagerProtocol {
         }
     }
     
+    public func signOut() {
+        setOffline()
+        quickAccessManager.clearAll()
+        authService.signOut { _ in }
+    }
+    
+    @objc public func setOnline() {
+        accountService.setOnline(accountID: accountID)
+    }
+    
+    @objc public func setOffline() {
+        accountService.setOffline(accountID: accountID)
+    }
+}
+
+extension AccountManager: ProfileInfoManagerProtocol {
     public func sendProfile(username: String,
                             info: String,
                             sex: String,
@@ -198,20 +214,6 @@ extension AccountManager: AccountManagerProtocol {
                 completion(.failure(error))
             }
         }
-    }
-    
-    public func signOut() {
-        setOffline()
-        quickAccessManager.clearAll()
-        authService.signOut { _ in }
-    }
-    
-    @objc public func setOnline() {
-        accountService.setOnline(accountID: accountID)
-    }
-    
-    @objc public func setOffline() {
-        accountService.setOffline(accountID: accountID)
     }
 }
 
