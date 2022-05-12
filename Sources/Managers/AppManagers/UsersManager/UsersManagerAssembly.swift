@@ -9,14 +9,14 @@ import Foundation
 import Swinject
 import NetworkServices
 
-public final class ProfilesManagerAssembly: Assembly {
+public final class UsersManagerAssembly: Assembly {
     
     public init() { }
     
     public func assemble(container: Container) {
         container.register(UsersManagerProtocol.self) { r in
             guard let profilesService = r.resolve(ProfilesServiceProtocol.self), let userID = r.resolve(QuickAccessManagerProtocol.self)?.userID else { fatalError(ErrorMessage.dependency.localizedDescription) }
-            return ProfilesManager(accountID: userID, profileService: profilesService)
-        }.implements(UserInfoManagerProtocol.self).inObjectScope(.weak)
+            return UsersManager(accountID: userID, profileService: profilesService)
+        }.inObjectScope(.weak)
     }
 }

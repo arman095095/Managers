@@ -10,16 +10,12 @@ import NetworkServices
 import ModelInterfaces
 import Services
 
-public protocol UserInfoManagerProtocol {
-    func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void)
-}
-
 public protocol UsersManagerProtocol: AnyObject {
     func getFirstProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
     func getNextProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
 }
 
-public final class ProfilesManager: UsersManagerProtocol {
+public final class UsersManager {
     
     public enum Limits: Int {
         case users = 15
@@ -32,6 +28,9 @@ public final class ProfilesManager: UsersManagerProtocol {
         self.profileService = profileService
         self.accountID = accountID
     }
+}
+
+extension UsersManager: UsersManagerProtocol {
     
     public func getFirstProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void) {
         profileService.getFirstProfilesIDs(count: Limits.users.rawValue) { [weak self] result in
@@ -46,11 +45,12 @@ public final class ProfilesManager: UsersManagerProtocol {
                 var profiles = [ProfileModelProtocol]()
                 profilesIDs.forEach {
                     group.enter()
-                    self.getProfile(userID: $0) { result in
+                    self.profileService.getProfileInfo(userID: $0) { result in
                         defer { group.leave() }
                         switch result {
                         case .success(let profile):
-                            profiles.append(profile)
+                            let profileModel = ProfileModel(profile: profile)
+                            profiles.append(profileModel)
                         case .failure:
                             break
                         }
@@ -99,16 +99,3 @@ public final class ProfilesManager: UsersManagerProtocol {
     }
 }
 
-extension ProfilesManager: UserInfoManagerProtocol {
-    public func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void) {
-        profileService.getProfileInfo(userID: userID) { result in
-            switch result {
-            case .success(let profile):
-                let profileModel = ProfileModel(profile: profile)
-                completion(.success(profileModel))
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-    }
-}
