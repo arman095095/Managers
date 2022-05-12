@@ -291,7 +291,7 @@ extension CommunicationManager: CommunicationManagerProtocol {
     }
     
     public func observeRequests(completion: @escaping ([RequestModelProtocol], [RequestModelProtocol]) -> Void) {
-        let socket = requestsService.initRequestsSocket(userID: accountID) { [weak self] result in
+        let recievedSocket = requestsService.initRequestsSocket(userID: accountID) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success((let add, let removed)):
@@ -336,7 +336,16 @@ extension CommunicationManager: CommunicationManagerProtocol {
                 break
             }
         }
-        sockets.append(socket)
+        let sendedSocket = requestsService.initSendedRequestsSocket(userID: accountID) { result in
+            switch result {
+            case .success((let add, let removed)):
+                self.updateCurrentAccountSendedRequests(add: add, removed: removed)
+            case .failure:
+                break
+            }
+        }
+        sockets.append(recievedSocket)
+        sockets.append(sendedSocket)
     }
     
     public func getChatsAndRequests(completion: @escaping (Result<([ChatModelProtocol], [RequestModelProtocol]), Error>) -> ()) {
@@ -398,6 +407,16 @@ private extension CommunicationManager {
         }
         removed.forEach {
             self.account.waitingsIds.remove($0)
+        }
+        cacheService.store(accountModel: self.account)
+    }
+    
+    func updateCurrentAccountSendedRequests(add: [String], removed: [String]) {
+        add.forEach {
+            self.account.requestIds.insert($0)
+        }
+        removed.forEach {
+            self.account.requestIds.remove($0)
         }
         cacheService.store(accountModel: self.account)
     }
