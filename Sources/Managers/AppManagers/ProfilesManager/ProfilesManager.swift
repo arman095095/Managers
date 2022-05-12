@@ -10,7 +10,7 @@ import NetworkServices
 import ModelInterfaces
 import Services
 
-public protocol ProfileInfoManager {
+public protocol UserInfoManagerProtocol {
     func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void)
 }
 
@@ -99,7 +99,7 @@ public final class ProfilesManager: UsersManagerProtocol {
     }
 }
 
-extension ProfilesManager: ProfileInfoManager {
+extension ProfilesManager: UserInfoManagerProtocol {
     public func getProfile(userID: String, completion: @escaping (Result<ProfileModelProtocol, Error>) -> Void) {
         profileService.getProfileInfo(userID: userID) { result in
             switch result {
