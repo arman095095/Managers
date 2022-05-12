@@ -14,8 +14,6 @@ public final class ManagersAssembly: Assembly {
     public init() { }
     
     public func assemble(container: Container) {
-        ServicesAssembly().assemble(container: container)
-        AccountCacheServiceAssembly().assemble(container: container)
         QuickAccessManagerAssembly().assemble(container: container)
         AuthManagerAssembly().assemble(container: container)
         AccountManagerAssembly().assemble(container: container)

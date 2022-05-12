@@ -105,7 +105,7 @@
       "location" : "https://github.com/arman095095/NetworkServices.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "f012c66339765386411aaf2b037f93ec220124ba"
+        "revision" : "e9854c9dce313618c2745a57fbbe5296fdaa1c0f"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "https://github.com/arman095095/Services.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "402372c00a2501a328c8e8b0663808229c2a9e29"
+        "revision" : "f58f04528b04afb3d29e990916c6744ffadf2afd"
       }
     },
     {

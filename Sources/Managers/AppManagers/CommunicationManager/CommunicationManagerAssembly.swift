@@ -9,6 +9,7 @@ import Foundation
 import Swinject
 import ModelInterfaces
 import NetworkServices
+import Services
 
 public final class CommunicationManagerAssembly: Assembly {
     public init() { }

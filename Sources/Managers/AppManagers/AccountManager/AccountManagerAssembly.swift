@@ -8,6 +8,7 @@
 import Foundation
 import Swinject
 import NetworkServices
+import Services
 
 public final class AccountManagerAssembly: Assembly {
     

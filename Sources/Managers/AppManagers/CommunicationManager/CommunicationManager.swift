@@ -8,6 +8,7 @@
 import Foundation
 import ModelInterfaces
 import NetworkServices
+import Services
 
 public protocol BlockingManagerProtocol: AnyObject {
     func blockedProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
@@ -35,10 +36,6 @@ public protocol CommunicationManagerProtocol: BlockingManagerProtocol, ProfileSt
     func observeFriendsAndRequestsProfiles(completion: @escaping () -> ())
     func remove(chat: ChatModelProtocol)
 }
-
-public typealias ChatsAndRequestsCacheServiceProtocol = ChatsCacheServiceProtocol & RequestsCacheServiceProtocol
-
-public typealias CommunicationCacheServiceProtocol = AccountCacheServiceProtocol & ChatsAndRequestsCacheServiceProtocol
 
 public final class CommunicationManager {
     private let account: AccountModelProtocol
