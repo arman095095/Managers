@@ -25,6 +25,6 @@ public final class PostsManagerAssembly: Assembly {
                                 postsService: postsServices,
                                 remoteStorage: remoteStorage,
                                 profilesService: profileService)
-        }
+        }.inObjectScope(.weak)
     }
 }
