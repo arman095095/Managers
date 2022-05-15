@@ -38,6 +38,10 @@ public final class ChatManager {
         self.accountID = accountID
         self.coreDataService = coreDataService
     }
+    
+    deinit {
+        sockets.forEach { $0.remove() }
+    }
 }
 
 extension ChatManager: ChatManagerProtocol {
