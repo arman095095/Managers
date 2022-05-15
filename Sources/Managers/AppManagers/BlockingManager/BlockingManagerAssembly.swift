@@ -28,6 +28,6 @@ final class BlockingManagerAssembly: Assembly {
                                    profileService: profileService,
                                    cacheService: cacheService,
                                    requestsService: requestsService)
-        }
+        }.inObjectScope(.weak)
     }
 }
