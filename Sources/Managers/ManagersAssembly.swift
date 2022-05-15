@@ -16,6 +16,7 @@ public final class ManagersAssembly: Assembly {
     public func assemble(container: Container) {
         QuickAccessManagerAssembly().assemble(container: container)
         AccountManagerAssembly().assemble(container: container)
+        ChatManagerAssembly().assemble(container: container)
         BlockingManagerAssembly().assemble(container: container)
     }
 }
