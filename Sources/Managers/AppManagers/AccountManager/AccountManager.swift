@@ -11,7 +11,6 @@ import Swinject
 import UIKit
 import ModelInterfaces
 import Services
-import Managers
 
 public protocol AccountManagerProtocol {
     func observeAccountChanges(completion: @escaping (Bool) -> ())
