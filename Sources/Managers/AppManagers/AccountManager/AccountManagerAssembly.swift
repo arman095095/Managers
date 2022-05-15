@@ -9,7 +9,6 @@ import Foundation
 import Swinject
 import NetworkServices
 import Services
-import Managers
 
 final class AccountManagerAssembly: Assembly {
     
