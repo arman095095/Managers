@@ -67,7 +67,7 @@ extension ChatManager: ChatManagerProtocol {
             case .success(let messageModels):
                 let messages: [MessageModelProtocol] = messageModels.compactMap {
                     guard let message = MessageModel(model: $0) else { return nil }
-                    guard message.id == cacheService.firstMessage?.id else { return nil }
+                    guard message.id != cacheService.lastMessage?.id else { return nil }
                     cacheService.storeRecievedMessage(message)
                     return message
                 }
