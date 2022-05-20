@@ -22,9 +22,9 @@ public final class UsersManager {
     }
     
     private let accountID: String
-    private let profileService: ProfilesServiceProtocol
+    private let profileService: ProfilesNetworkServiceProtocol
     
-    public init(accountID: String, profileService: ProfilesServiceProtocol) {
+    public init(accountID: String, profileService: ProfilesNetworkServiceProtocol) {
         self.profileService = profileService
         self.accountID = accountID
     }
