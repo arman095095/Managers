@@ -9,7 +9,7 @@ import Foundation
 import NetworkServices
 import ModelInterfaces
 import Services
-
+/*
 public protocol UsersManagerProtocol: AnyObject {
     func getFirstProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
     func getNextProfiles(completion: @escaping (Result<[ProfileModelProtocol], Error>) -> Void)
@@ -99,3 +99,4 @@ extension UsersManager: UsersManagerProtocol {
     }
 }
 
+*/
