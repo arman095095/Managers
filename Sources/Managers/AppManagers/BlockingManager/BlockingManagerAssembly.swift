@@ -19,7 +19,7 @@ final class BlockingManagerAssembly: Assembly {
                   let accountService = r.resolve(AccountServiceProtocol.self),
                   let cacheService = r.resolve(AccountCacheServiceProtocol.self),
                   let profileService = r.resolve(ProfilesServiceProtocol.self),
-                  let requestsService = r.resolve(RequestsServiceProtocol.self) else {
+                  let accountInfoNetworkService = r.resolve(AccountInfoNetworkServiceProtocol.self) else {
                 fatalError(ErrorMessage.dependency.localizedDescription)
             }
             return BlockingManager(account: account,
@@ -27,7 +27,7 @@ final class BlockingManagerAssembly: Assembly {
                                    accountService: accountService,
                                    profileService: profileService,
                                    cacheService: cacheService,
-                                   requestsService: requestsService)
+                                   accountInfoNetworkService: accountInfoNetworkService)
         }.inObjectScope(.weak)
     }
 }

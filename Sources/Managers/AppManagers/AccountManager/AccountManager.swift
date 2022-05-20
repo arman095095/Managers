@@ -33,8 +33,8 @@ final class AccountManager {
     private var account: AccountModelProtocol?
     private let accountID: String
     private let accountService: AccountServiceProtocol
-    private let requestsService: RequestsServiceProtocol
-    private let remoteStorageService: RemoteStorageServiceProtocol
+    private let accountInfoService: AccountInfoNetworkServiceProtocol
+    private let remoteStorageService: ProfileRemoteStorageServiceProtocol
     private let profileService: ProfilesServiceProtocol
     private let container: Container
     private let quickAccessManager: QuickAccessManagerProtocol
@@ -43,14 +43,14 @@ final class AccountManager {
     
     init(accountID: String,
          accountService: AccountServiceProtocol,
-         requestsService: RequestsServiceProtocol,
-         remoteStorage: RemoteStorageServiceProtocol,
+         accountInfoService: AccountInfoNetworkServiceProtocol,
+         remoteStorage: ProfileRemoteStorageServiceProtocol,
          quickAccessManager: QuickAccessManagerProtocol,
          profileService: ProfilesServiceProtocol,
          cacheService: AccountCacheServiceProtocol,
          container: Container) {
         self.accountService = accountService
-        self.requestsService = requestsService
+        self.accountInfoService = accountInfoService
         self.remoteStorageService = remoteStorage
         self.quickAccessManager = quickAccessManager
         self.profileService = profileService
@@ -185,7 +185,7 @@ private extension AccountManager {
             }
         }
         group.enter()
-        requestsService.waitingIDs(userID: accountID) { result in
+        accountInfoService.waitingIDs(userID: accountID) { result in
             defer { group.leave() }
             switch result {
             case .success(let ids):
@@ -195,7 +195,7 @@ private extension AccountManager {
             }
         }
         group.enter()
-        requestsService.requestIDs(userID: accountID) { result in
+        accountInfoService.requestIDs(userID: accountID) { result in
             defer { group.leave() }
             switch result {
             case .success(let ids):
@@ -205,7 +205,7 @@ private extension AccountManager {
             }
         }
         group.enter()
-        requestsService.friendIDs(userID: accountID) { result in
+        accountInfoService.friendIDs(userID: accountID) { result in
             defer { group.leave() }
             switch result {
             case .success(let ids):

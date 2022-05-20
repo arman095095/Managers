@@ -39,20 +39,20 @@ final class BlockingManager {
     private let accountService: AccountServiceProtocol
     private let profileService: ProfilesServiceProtocol
     private let cacheService: AccountCacheServiceProtocol
-    private let requestsService: RequestsServiceProtocol
+    private let accountInfoNetworkService: AccountInfoNetworkServiceProtocol
     
     init(account: AccountModelProtocol,
          accountID: String,
          accountService: AccountServiceProtocol,
          profileService: ProfilesServiceProtocol,
          cacheService: AccountCacheServiceProtocol,
-         requestsService: RequestsServiceProtocol) {
+         accountInfoNetworkService: AccountInfoNetworkServiceProtocol) {
         self.account = account
         self.accountID = accountID
         self.accountService = accountService
         self.profileService = profileService
         self.cacheService = cacheService
-        self.requestsService = requestsService
+        self.accountInfoNetworkService = accountInfoNetworkService
     }
 }
 
@@ -98,7 +98,7 @@ extension BlockingManager: BlockingManagerProtocol {
                 var errors = [Error]()
                 let group = DispatchGroup()
                 group.enter()
-                self.requestsService.removeFriend(with: id, from: self.accountID) { result in
+                self.accountInfoNetworkService.removeFriend(with: id, from: self.accountID) { result in
                     defer { group.leave() }
                     switch result {
                     case .success():
@@ -108,7 +108,7 @@ extension BlockingManager: BlockingManagerProtocol {
                     }
                 }
                 group.enter()
-                self.requestsService.deny(toID: id, fromID: self.accountID) { result in
+                self.accountInfoNetworkService.deny(toID: id, fromID: self.accountID) { result in
                     defer { group.leave() }
                     switch result {
                     case .success():
@@ -118,7 +118,7 @@ extension BlockingManager: BlockingManagerProtocol {
                     }
                 }
                 group.enter()
-                self.requestsService.cancelRequest(toID: id, fromID: self.accountID) { result in
+                self.accountInfoNetworkService.cancelRequest(toID: id, fromID: self.accountID) { result in
                     defer { group.leave() }
                     switch result {
                     case .success():
