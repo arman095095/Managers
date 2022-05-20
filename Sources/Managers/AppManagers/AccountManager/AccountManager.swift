@@ -32,7 +32,6 @@ public enum AccountManagerContext {
 final class AccountManager {
     private var account: AccountModelProtocol?
     private let accountID: String
-    private let authService: AuthServiceProtocol
     private let accountService: AccountServiceProtocol
     private let requestsService: RequestsServiceProtocol
     private let remoteStorageService: RemoteStorageServiceProtocol
@@ -43,7 +42,6 @@ final class AccountManager {
     private var socket: SocketProtocol?
     
     init(accountID: String,
-         authService: AuthServiceProtocol,
          accountService: AccountServiceProtocol,
          requestsService: RequestsServiceProtocol,
          remoteStorage: RemoteStorageServiceProtocol,
@@ -51,7 +49,6 @@ final class AccountManager {
          profileService: ProfilesServiceProtocol,
          cacheService: AccountCacheServiceProtocol,
          container: Container) {
-        self.authService = authService
         self.accountService = accountService
         self.requestsService = requestsService
         self.remoteStorageService = remoteStorage
@@ -146,7 +143,6 @@ extension AccountManager: AccountManagerProtocol {
     public func signOut() {
         setOffline()
         quickAccessManager.clearAll()
-        authService.signOut { _ in }
     }
     
     @objc public func setOnline() {
